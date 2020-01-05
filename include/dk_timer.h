@@ -31,8 +31,8 @@
 #ifndef __DK_NET_TIMER_H__
 #define __DK_NET_TIMER_H__
 
-#include "nty_tcp.h"
-#include "nty_queue.h"
+#include "dk_tcp.h"
+#include "dk_queue.h"
 
 #include <stdint.h>
 

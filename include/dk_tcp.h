@@ -31,15 +31,15 @@
 #ifndef __DK_NET_TCP_H__
 #define __DK_NET_TCP_H__
 
-#include "nty_timer.h"
+#include "dk_timer.h"
 
-#include "nty_buffer.h"
-#include "nty_hash.h"
-#include "nty_addr.h"
+#include "dk_buffer.h"
+#include "dk_hash.h"
+#include "dk_addr.h"
 
-#include "nty_config.h"
+#include "dk_config.h"
 
-#include "nty_epoll_inner.h"
+#include "dk_epoll_inner.h"
 
 #define ETH_NUM     4
 

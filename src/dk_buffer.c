@@ -26,7 +26,7 @@
 
 
 
-#include "nty_buffer.h"
+#include "dk_buffer.h"
 
 
 nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum )

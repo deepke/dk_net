@@ -27,8 +27,8 @@
 
 
 
-#include "nty_hash.h"
-#include "nty_tcp.h"
+#include "dk_hash.h"
+#include "dk_tcp.h"
 
 unsigned int HashFlow ( const void* f )
 {

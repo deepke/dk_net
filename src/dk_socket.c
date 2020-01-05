@@ -25,9 +25,9 @@
 */
 
 
-#include "nty_epoll_inner.h"
-#include "nty_header.h"
-#include "nty_socket.h"
+#include "dk_epoll_inner.h"
+#include "dk_header.h"
+#include "dk_socket.h"
 
 #include <hugetlbfs.h>
 #include <pthread.h>

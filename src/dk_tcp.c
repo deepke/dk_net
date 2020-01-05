@@ -26,12 +26,12 @@
 
 
 
-#include "nty_tcp.h"
-#include "nty_header.h"
-#include "nty_nic.h"
-#include "nty_hash.h"
-#include "nty_buffer.h"
-#include "nty_timer.h"
+#include "dk_tcp.h"
+#include "dk_header.h"
+#include "dk_nic.h"
+#include "dk_hash.h"
+#include "dk_buffer.h"
+#include "dk_timer.h"
 
 #include <pthread.h>
 

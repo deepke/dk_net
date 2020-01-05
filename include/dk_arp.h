@@ -31,7 +31,7 @@
 #ifndef __DK_NET_ARP_H__
 #define __DK_NET_ARP_H__
 
-#include "nty_header.h"
+#include "dk_header.h"
 
 #define MAX_ARPENTRY    256
 

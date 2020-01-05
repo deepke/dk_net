@@ -26,8 +26,8 @@
 
 
 
-#include "nty_header.h"
-#include "nty_nic.h"
+#include "dk_header.h"
+#include "dk_nic.h"
 
 
 extern unsigned short in_cksum ( unsigned short* addr, int len );

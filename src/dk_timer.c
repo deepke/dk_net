@@ -28,9 +28,9 @@
 
 
 
-#include "nty_buffer.h"
-#include "nty_timer.h"
-#include "nty_tcp.h"
+#include "dk_buffer.h"
+#include "dk_timer.h"
+#include "dk_tcp.h"
 
 
 extern void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream );

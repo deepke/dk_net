@@ -27,8 +27,8 @@
 
 
 
-#include "nty_epoll_inner.h"
-#include "nty_socket.h"
+#include "dk_epoll_inner.h"
+#include "dk_socket.h"
 
 #include <unistd.h>
 #include <time.h>

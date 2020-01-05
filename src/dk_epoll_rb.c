@@ -26,10 +26,10 @@
 
 
 
-#include "nty_tree.h"
-#include "nty_queue.h"
-#include "nty_epoll_inner.h"
-#include "nty_config.h"
+#include "dk_tree.h"
+#include "dk_queue.h"
+#include "dk_epoll_inner.h"
+#include "dk_config.h"
 
 #if NTY_ENABLE_EPOLL_RB
 

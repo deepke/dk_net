@@ -29,9 +29,9 @@
 #define __DK_NET_SOCKET_H__
 
 
-#include "nty_buffer.h"
-#include "nty_tcp.h"
-#include "nty_config.h"
+#include "dk_buffer.h"
+#include "dk_tcp.h"
+#include "dk_config.h"
 
 #include <pthread.h>
 

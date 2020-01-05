@@ -28,10 +28,10 @@
 
 
 
-#include "nty_header.h"
-#include "nty_tcp.h"
-#include "nty_nic.h"
-#include "nty_arp.h"
+#include "dk_header.h"
+#include "dk_tcp.h"
+#include "dk_nic.h"
+#include "dk_arp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
