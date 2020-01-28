@@ -197,25 +197,25 @@ typedef struct _dk_tcp_recv
     uint32_t irs;
     uint32_t snd_wl1;
     uint32_t snd_wl2;
-
+    
     uint8_t dup_acks;
     uint32_t last_ack_seq;
-
+    
     uint32_t ts_recent;
     uint32_t ts_lastack_rcvd;
     uint32_t ts_last_ts_upd;
     uint32_t ts_tw_expire;
-
+    
     uint32_t srtt;
     uint32_t mdev;
     uint32_t mdev_max;
     uint32_t rttvar;
     uint32_t rtt_seq;
-
-    struct _dk_ring_buffer* recvbuf;
-
+    
+    struct _dk_ring_buffer *recvbuf;
+    
     TAILQ_ENTRY ( _dk_tcp_stream ) he_link;
-
+    
 #if NTY_ENABLE_BLOCKING
     TAILQ_ENTRY ( _dk_tcp_stream ) rcv_br_link;
     pthread_cond_t read_cond;
@@ -223,7 +223,7 @@ typedef struct _dk_tcp_recv
 #else
     pthread_spinlock_t read_lock;
 #endif
-
+    
 } dk_tcp_recv;
 
 typedef struct _dk_tcp_send
@@ -231,31 +231,31 @@ typedef struct _dk_tcp_send
     uint16_t ip_id;
     uint16_t mss;
     uint16_t eff_mss;
-
+    
     uint8_t wscale_mine;
     uint8_t wscale_peer;
     int8_t nif_out;
-
-    unsigned char* d_haddr;
+    
+    unsigned char *d_haddr;
     uint32_t snd_una;
     uint32_t snd_wnd;
-
+    
     uint32_t peer_wnd;
     uint32_t iss;
     uint32_t fss;
-
+    
     uint8_t nrtx;
     uint8_t max_nrtx;
     uint32_t rto;
     uint32_t ts_rto;
-
+    
     uint32_t cwnd;
     uint32_t ssthresh;
     uint32_t ts_lastack_sent;
-
-    uint8_t is_wack:1,
-            ack_cnt:6;
-
+    
+    uint8_t is_wack: 1,
+            ack_cnt: 6;
+            
     uint8_t on_control_list;
     uint8_t on_send_list;
     uint8_t on_ack_list;
@@ -263,20 +263,20 @@ typedef struct _dk_tcp_send
     uint8_t on_ackq;
     uint8_t on_closeq;
     uint8_t on_resetq;
-
-    uint8_t on_closeq_int:1,
-            on_resetq_int:1,
-            is_fin_sent:1,
-            is_fin_ackd:1;
-
+    
+    uint8_t on_closeq_int: 1,
+            on_resetq_int: 1,
+            is_fin_sent: 1,
+            is_fin_ackd: 1;
+            
     TAILQ_ENTRY ( _dk_tcp_stream ) control_link;
     TAILQ_ENTRY ( _dk_tcp_stream ) send_link;
     TAILQ_ENTRY ( _dk_tcp_stream ) ack_link;
     TAILQ_ENTRY ( _dk_tcp_stream ) timer_link;
     TAILQ_ENTRY ( _dk_tcp_stream ) timeout_link;
-
-    struct _dk_send_buffer* sndbuf;
-
+    
+    struct _dk_send_buffer *sndbuf;
+    
 #if NTY_ENABLE_BLOCKING
     TAILQ_ENTRY ( _dk_tcp_stream ) snd_br_link;
     pthread_cond_t write_cond;
@@ -284,51 +284,51 @@ typedef struct _dk_tcp_send
 #else
     pthread_spinlock_t write_lock;
 #endif
-
+    
 } dk_tcp_send; //__attribute__((packed))
 
 typedef struct _dk_tcp_stream
 {
 #if NTY_ENABLE_SOCKET_C10M
-    struct _dk_socket* s;
+    struct _dk_socket *s;
 #endif
-    struct _dk_socket_map* socket;
-    uint32_t id:24,
-             stream_type:8;
-
+    struct _dk_socket_map *socket;
+    uint32_t id: 24,
+             stream_type: 8;
+             
     uint32_t saddr;
     uint32_t daddr;
-
+    
     uint16_t sport;
     uint16_t dport;
-
+    
     uint8_t state;
     uint8_t close_reason;
     uint8_t on_hash_table;
     uint8_t on_timewait_list;
-
+    
     uint8_t ht_idx;
     uint8_t closed;
     uint8_t is_bound_addr;
     uint8_t need_wnd_adv;
-
+    
     int16_t on_rto_idx;
-    uint16_t on_timeout_list:1,
-             on_rcv_br_list:1,
-             on_snd_br_list:1,
-             saw_timestamp:1,
-             sack_permit:1,
-             control_list_waiting:1,
-             have_reset:1;
-
+    uint16_t on_timeout_list: 1,
+             on_rcv_br_list: 1,
+             on_snd_br_list: 1,
+             saw_timestamp: 1,
+             sack_permit: 1,
+             control_list_waiting: 1,
+             have_reset: 1;
+             
     uint32_t last_active_ts;
-
-    dk_tcp_recv* rcv;
-    dk_tcp_send* snd;
-
+    
+    dk_tcp_recv *rcv;
+    dk_tcp_send *snd;
+    
     uint32_t snd_nxt;
     uint32_t rcv_nxt;
-
+    
 } dk_tcp_stream;
 
 typedef struct _dk_sender
@@ -337,94 +337,94 @@ typedef struct _dk_sender
     TAILQ_HEAD ( control_head, _dk_tcp_stream ) control_list;
     TAILQ_HEAD ( send_head, _dk_tcp_stream ) send_list;
     TAILQ_HEAD ( ack_head, _dk_tcp_stream ) ack_list;
-
+    
     int control_list_cnt;
     int send_list_cnt;
     int ack_list_cnt;
 } dk_sender; //__attribute__((packed))
 
-typedef struct _net_thread_context
+typedef struct _dk_thread_context
 {
     int cpu;
     pthread_t thread;
-    uint8_t done:1,
-            exit:1,
-            interrupt:1;
-
-        struct _dk_tcp_manager* tcp_manager;
-        void* io_private_context;
-
+    uint8_t done: 1,
+            exit: 1,
+            interrupt: 1;
+            
+        struct _dk_tcp_manager *tcp_manager;
+        void *io_private_context;
+        
         pthread_mutex_t smap_lock;
         pthread_mutex_t flow_pool_lock;
         pthread_mutex_t socket_pool_lock;
-    } net_thread_context; //__attribute__((packed))
-
+    } dk_thread_context; //__attribute__((packed))
+    
     typedef struct _dk_tcp_manager
 {
 
-    struct _dk_mempool* flow;
-    struct _dk_mempool* rcv;
-    struct _dk_mempool* snd;
-    struct _dk_mempool* mv;
-
-    struct _dk_sb_manager* rbm_snd;
-    struct _dk_rb_manager* rbm_rcv;
-
-    struct _dk_hashtable* tcp_flow_table;
-
+    struct _dk_mempool *flow;
+    struct _dk_mempool *rcv;
+    struct _dk_mempool *snd;
+    struct _dk_mempool *mv;
+    
+    struct _dk_sb_manager *rbm_snd;
+    struct _dk_rb_manager *rbm_rcv;
+    
+    struct _dk_hashtable *tcp_flow_table;
+    
 #if NTY_ENABLE_SOCKET_C10M
-    struct _dk_socket_table* fdtable;
+    struct _dk_socket_table *fdtable;
 #endif
-
+    
     uint32_t s_index;
-    struct _dk_socket_map* smap;
+    struct _dk_socket_map *smap;
     TAILQ_HEAD (, _dk_socket_map ) free_smap;
-
-
-    struct _dk_addr_pool* ap;
+    
+    
+    struct _dk_addr_pool *ap;
     uint32_t gid;
     uint32_t flow_cnt;
-
-    dk_thread_context* ctx;
+    
+    dk_thread_context *ctx;
 #if NTY_ENABLE_EPOLL_RB
-    void* ep;
+    void *ep;
 #else
-    struct _dk_epoll* ep;
+    struct _dk_epoll *ep;
 #endif
     uint32_t ts_last_event;
-
-    struct _dk_hashtable* listeners;
-
-    struct _dk_stream_queue* connectq;
-    struct _dk_stream_queue* sendq;
-    struct _dk_stream_queue* ackq;
-
-    struct _dk_stream_queue* closeq;
-    struct _dk_stream_queue_int* closeq_int;
-
-    struct _dk_stream_queue* resetq;
-    struct _dk_stream_queue_int* resetq_int;
-
-    struct _dk_stream_queue* destroyq;
-
-    struct _dk_sender* g_sender;
-    struct _dk_sender* n_sender[ETH_NUM];
-
-    struct _dk_rto_hashstore* rto_store;
+    
+    struct _dk_hashtable *listeners;
+    
+    struct _dk_stream_queue *connectq;
+    struct _dk_stream_queue *sendq;
+    struct _dk_stream_queue *ackq;
+    
+    struct _dk_stream_queue *closeq;
+    struct _dk_stream_queue_int *closeq_int;
+    
+    struct _dk_stream_queue *resetq;
+    struct _dk_stream_queue_int *resetq_int;
+    
+    struct _dk_stream_queue *destroyq;
+    
+    struct _dk_sender *g_sender;
+    struct _dk_sender *n_sender[ETH_NUM];
+    
+    struct _dk_rto_hashstore *rto_store;
     TAILQ_HEAD ( timewait_head, _dk_tcp_stream ) timewait_list;
     TAILQ_HEAD ( timeout_head, _dk_tcp_stream ) timeout_list;
-
+    
     int rto_list_cnt;
     int timewait_list_cnt;
     int timeout_list_cnt;
-
+    
 #if NTY_ENABLE_BLOCKING
     TAILQ_HEAD ( rcv_br_head, _dk_tcp_stream ) rcv_br_list;
     TAILQ_HEAD ( snd_br_head, _dk_tcp_stream ) snd_br_list;
     int rcv_br_list_cnt;
     int snd_br_list_cnt;
 #endif
-
+    
     uint32_t cur_ts;
     int wakeup_flag;
     int is_sleeping;
@@ -436,51 +436,51 @@ typedef struct _net_thread_context
 typedef struct _dk_tcp_listener
 {
     int sockid;
-
+    
 #if NTY_ENABLE_SOCKET_C10M
-    struct _dk_socket* s;
+    struct _dk_socket *s;
 #endif
-
-    struct _dk_socket_map* socket;
-
+    
+    struct _dk_socket_map *socket;
+    
     int backlog;
-    struct _dk_stream_queue* acceptq;
-
+    struct _dk_stream_queue *acceptq;
+    
     pthread_mutex_t accept_lock;
     pthread_cond_t accept_cond;
-
+    
     TAILQ_ENTRY ( _dk_tcp_listener ) he_link;
 } dk_tcp_listener; //__attribute__((packed))
 
 
-uint8_t* EthernetOutput ( dk_tcp_manager* tcp, uint16_t h_proto,
-                          int nif, unsigned char* dst_haddr, uint16_t iplen );
-uint8_t* IPOutput ( dk_tcp_manager* tcp, dk_tcp_stream* stream, uint16_t tcplen );
+uint8_t *EthernetOutput ( dk_tcp_manager *tcp, uint16_t h_proto,
+                          int nif, unsigned char *dst_haddr, uint16_t iplen );
+uint8_t *IPOutput ( dk_tcp_manager *tcp, dk_tcp_stream *stream, uint16_t tcplen );
 
 
-dk_tcp_stream* CreateTcpStream ( dk_tcp_manager* tcp, struct _dk_socket_map* socket, int type,
-                                  uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport );
+dk_tcp_stream *CreateTcpStream ( dk_tcp_manager *tcp, struct _dk_socket_map *socket, int type,
+                                 uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport );
 
-uint8_t* IPOutputStandalone ( dk_tcp_manager* tcp, uint8_t protocol,
+uint8_t *IPOutputStandalone ( dk_tcp_manager *tcp, uint8_t protocol,
                               uint16_t ip_id, uint32_t saddr, uint32_t daddr, uint16_t payloadlen );
 
-void dk_tcp_addto_sendlist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
-void dk_tcp_addto_controllist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
-void dk_tcp_remove_controllist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
-void dk_tcp_remove_sendlist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
-void dk_tcp_remove_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+void dk_tcp_addto_sendlist ( dk_tcp_manager *tcp, dk_tcp_stream *cur_stream );
+void dk_tcp_addto_controllist ( dk_tcp_manager *tcp, dk_tcp_stream *cur_stream );
+void dk_tcp_remove_controllist ( dk_tcp_manager *tcp, dk_tcp_stream *cur_stream );
+void dk_tcp_remove_sendlist ( dk_tcp_manager *tcp, dk_tcp_stream *cur_stream );
+void dk_tcp_remove_acklist ( dk_tcp_manager *tcp, dk_tcp_stream *cur_stream );
 
 
 void dk_tcp_write_chunks ( uint32_t cur_ts );
 int dk_tcp_handle_apicall ( uint32_t cur_ts );
-int dk_tcp_init_manager ( dk_thread_context* ctx );
-void dk_tcp_init_thread_context ( dk_thread_context* ctx );
+int dk_tcp_init_manager ( dk_thread_context *ctx );
+void dk_tcp_init_thread_context ( dk_thread_context *ctx );
 
 
-void RaiseReadEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
-void RaiseWriteEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
-void RaiseCloseEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
-void RaiseErrorEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
+void RaiseReadEvent ( dk_tcp_manager *tcp, dk_tcp_stream *stream );
+void RaiseWriteEvent ( dk_tcp_manager *tcp, dk_tcp_stream *stream );
+void RaiseCloseEvent ( dk_tcp_manager *tcp, dk_tcp_stream *stream );
+void RaiseErrorEvent ( dk_tcp_manager *tcp, dk_tcp_stream *stream );
 
 
 

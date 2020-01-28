@@ -188,7 +188,7 @@ static void* dk_tcp_run ( void* arg )
 */
 void dk_net_init ( void )
 {
-    net_thread_context* tctx = ( net_thread_context* ) calloc ( 1, sizeof ( net_thread_context ) );
+    dk_thread_context* tctx = ( net_thread_context* ) calloc ( 1, sizeof ( net_thread_context ) );
     assert ( tctx != NULL );
     printf ( "dk_stack start\n" );
 
