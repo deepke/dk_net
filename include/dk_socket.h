@@ -36,7 +36,7 @@
 #include <pthread.h>
 
 
-typedef struct _nty_socket_map
+typedef struct _dk_socket_map
 {
     int id;
     int socktype;
@@ -60,7 +60,7 @@ typedef struct _nty_socket_map
     uint32_t events;
     uint64_t ep_data;
 
-    TAILQ_ENTRY ( _nty_socket_map ) free_smap_link;
+    TAILQ_ENTRY ( _dk_socket_map ) free_smap_link;
 } nty_socket_map; //__attribute__((packed))
 
 

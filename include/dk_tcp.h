@@ -292,7 +292,7 @@ typedef struct _nty_tcp_stream
 #if NTY_ENABLE_SOCKET_C10M
     struct _nty_socket* s;
 #endif
-    struct _nty_socket_map* socket;
+    struct _dk_socket_map* socket;
     uint32_t id:24,
              stream_type:8;
 
@@ -343,7 +343,7 @@ typedef struct _nty_sender
     int ack_list_cnt;
 } nty_sender; //__attribute__((packed))
 
-typedef struct _nty_thread_context
+typedef struct _net_thread_context
 {
     int cpu;
     pthread_t thread;
@@ -357,7 +357,7 @@ typedef struct _nty_thread_context
         pthread_mutex_t smap_lock;
         pthread_mutex_t flow_pool_lock;
         pthread_mutex_t socket_pool_lock;
-    } nty_thread_context; //__attribute__((packed))
+    } net_thread_context; //__attribute__((packed))
 
     typedef struct _nty_tcp_manager
 {
@@ -377,8 +377,8 @@ typedef struct _nty_thread_context
 #endif
 
     uint32_t s_index;
-    struct _nty_socket_map* smap;
-    TAILQ_HEAD (, _nty_socket_map ) free_smap;
+    struct _dk_socket_map* smap;
+    TAILQ_HEAD (, _dk_socket_map ) free_smap;
 
 
     struct _nty_addr_pool* ap;
@@ -441,7 +441,7 @@ typedef struct _nty_tcp_listener
     struct _nty_socket* s;
 #endif
 
-    struct _nty_socket_map* socket;
+    struct _dk_socket_map* socket;
 
     int backlog;
     struct _nty_stream_queue* acceptq;
@@ -458,7 +458,7 @@ uint8_t* EthernetOutput ( nty_tcp_manager* tcp, uint16_t h_proto,
 uint8_t* IPOutput ( nty_tcp_manager* tcp, nty_tcp_stream* stream, uint16_t tcplen );
 
 
-nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _nty_socket_map* socket, int type,
+nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _dk_socket_map* socket, int type,
                                   uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport );
 
 uint8_t* IPOutputStandalone ( nty_tcp_manager* tcp, uint8_t protocol,

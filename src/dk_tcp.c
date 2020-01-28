@@ -2266,7 +2266,13 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
 
     return 0;
 }
-
+/*
+* 函数名: nty_tcp_init_thread_context
+* 功能    : 协议栈初始化
+* 入参    : 无
+* 出参    : 无
+* 注意    ：无
+*/
 void nty_tcp_init_thread_context ( nty_thread_context* ctx )
 {
 

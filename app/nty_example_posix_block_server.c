@@ -76,7 +76,7 @@
 int main()
 {
 
-    nty_tcp_setup();
+    dk_net_init();
 
     usleep ( 1 );
 

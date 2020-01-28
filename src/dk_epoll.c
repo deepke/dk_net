@@ -204,7 +204,7 @@ int nty_epoll_flush_events ( uint32_t cur_ts )
 }
 
 
-int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _nty_socket_map* socket, uint32_t event )
+int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* socket, uint32_t event )
 {
     nty_event_queue* eq = NULL;
 

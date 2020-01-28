@@ -216,7 +216,7 @@ void RaiseErrorEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 }
 
 
-nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _nty_socket_map* socket, int type,
+nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _dk_socket_map* socket, int type,
                                   uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport )
 {
 

@@ -113,7 +113,13 @@ extern void CheckTimewaitExpire ( nty_tcp_manager* tcp, uint32_t cur_ts, int thr
 extern void CheckConnectionTimeout ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh );
 
 
-
+/*
+* 函数名: dk_net_init
+* 功能    : 协议栈初始化
+* 入参    : 无
+* 出参    : 无
+* 注意    ：无
+*/
 static void* nty_tcp_run ( void* arg )
 {
     nty_nic_context* ctx = ( nty_nic_context* ) arg;
@@ -173,9 +179,16 @@ static void* nty_tcp_run ( void* arg )
     return NULL;
 }
 
-void nty_tcp_setup ( void )
+/*
+* 函数名: dk_net_init
+* 功能    : 协议栈初始化
+* 入参    : 无
+* 出参    : 无
+* 注意    ：无
+*/
+void dk_net_init ( void )
 {
-    nty_thread_context* tctx = ( nty_thread_context* ) calloc ( 1, sizeof ( nty_thread_context ) );
+    net_thread_context* tctx = ( net_thread_context* ) calloc ( 1, sizeof ( net_thread_context ) );
     assert ( tctx != NULL );
     printf ( "nty_stack start\n" );
 

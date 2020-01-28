@@ -86,7 +86,7 @@ typedef struct _nty_epoll
     pthread_mutex_t epoll_lock;
 } nty_epoll;
 
-int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _nty_socket_map* socket, uint32_t event );
+int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* socket, uint32_t event );
 int nty_close_epoll_socket ( int epid );
 int nty_epoll_flush_events ( uint32_t cur_ts );
 

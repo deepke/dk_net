@@ -889,7 +889,7 @@ int nty_connect ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 #endif
 
 
-#if NTY_ENABLE_POSIX_API
+#if NET_POSIX_API
 
 
 int socket ( int domain, int type, int protocol )

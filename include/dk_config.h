@@ -47,7 +47,7 @@
 
 #define NTY_ENABLE_EPOLL_RB     1
 #define NTY_ENABLE_SOCKET_C10M  1
-#define NTY_ENABLE_POSIX_API    1
+#define NET_POSIX_API    1
 
 
 #define NTY_SOCKFD_NR           (1024*1024)

@@ -43,7 +43,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags );
 ssize_t nty_send ( int sockid, const char* buf, size_t len );
 int nty_close ( int sockid );
 
-void nty_tcp_setup ( void );
+void dk_net_init ( void );
 
 
 int socket ( int domain, int type, int protocol );
