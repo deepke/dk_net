@@ -38,14 +38,14 @@
 
 #define RTO_HASH        3000
 
-typedef struct _nty_rto_hashstore
+typedef struct _dk_rto_hashstore
 {
     uint32_t rto_now_idx;
     uint32_t rto_now_ts;
-    TAILQ_HEAD ( rto_head, _nty_tcp_stream ) rto_list[RTO_HASH+1];
-} nty_rto_hashstore;
+    TAILQ_HEAD ( rto_head, _dk_tcp_stream ) rto_list[RTO_HASH+1];
+} dk_rto_hashstore;
 
-nty_rto_hashstore* InitRTOHashstore ( void );
+dk_rto_hashstore* InitRTOHashstore ( void );
 
 
 

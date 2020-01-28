@@ -45,7 +45,7 @@ $ sudo apt-get install libhugetlbfs-dev
 $ make
 ```
 
-update NtyTcp/include/nty_config.h 
+update NtyTcp/include/dk_config.h 
 ```
 
 #define NTY_SELF_IP		"192.168.0.106" 	//your ip
@@ -57,11 +57,11 @@ update NtyTcp/include/nty_config.h
 
 block server run:
 ```
-$ ./bin/nty_example_block_server
+$ ./bin/dk_example_block_server
 ```
 epoll server run:
 ```
-$ ./bin/nty_example_epoll_rb_server
+$ ./bin/dk_example_epoll_rb_server
 ```
 
 ## Reference

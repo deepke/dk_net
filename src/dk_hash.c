@@ -32,7 +32,7 @@
 
 unsigned int HashFlow ( const void* f )
 {
-    nty_tcp_stream* flow = ( nty_tcp_stream* ) f;
+    dk_tcp_stream* flow = ( dk_tcp_stream* ) f;
 
     unsigned int hash, i;
     char* key = ( char* ) &flow->saddr;
@@ -52,8 +52,8 @@ unsigned int HashFlow ( const void* f )
 
 int EqualFlow ( const void* f1, const void* f2 )
 {
-    nty_tcp_stream* flow1 = ( nty_tcp_stream* ) f1;
-    nty_tcp_stream* flow2 = ( nty_tcp_stream* ) f2;
+    dk_tcp_stream* flow1 = ( dk_tcp_stream* ) f1;
+    dk_tcp_stream* flow2 = ( dk_tcp_stream* ) f2;
 
     return ( flow1->saddr == flow2->saddr &&
              flow1->sport == flow2->sport &&
@@ -63,15 +63,15 @@ int EqualFlow ( const void* f1, const void* f2 )
 
 unsigned int HashListener ( const void* l )
 {
-    nty_tcp_listener* listener = ( nty_tcp_listener* ) l;
+    dk_tcp_listener* listener = ( dk_tcp_listener* ) l;
 
     return listener->s->s_addr.sin_port & ( NUM_BINS_LISTENERS - 1 );
 }
 
 int EqualListener ( const void* l1, const void* l2 )
 {
-    nty_tcp_listener* listener1 = ( nty_tcp_listener* ) l1;
-    nty_tcp_listener* listener2 = ( nty_tcp_listener* ) l2;
+    dk_tcp_listener* listener1 = ( dk_tcp_listener* ) l1;
+    dk_tcp_listener* listener2 = ( dk_tcp_listener* ) l2;
 
     return ( listener1->s->s_addr.sin_port == listener2->s->s_addr.sin_port );
 }
@@ -81,12 +81,12 @@ int EqualListener ( const void* l1, const void* l2 )
 #define IS_LISTEN_TABLE(x)  (x == HashListener)
 
 
-nty_hashtable* CreateHashtable ( unsigned int ( *hashfn ) ( const void* ), // key function
+dk_hashtable* CreateHashtable ( unsigned int ( *hashfn ) ( const void* ), // key function
                                  int ( *eqfn ) ( const void*, const void* ),         // equality
                                  int bins ) // no of bins
 {
     int i;
-    nty_hashtable* ht = calloc ( 1, sizeof ( nty_hashtable ) );
+    dk_hashtable* ht = calloc ( 1, sizeof ( dk_hashtable ) );
     if ( !ht )
     {
         printf ( "calloc: CreateHashtable" );
@@ -133,7 +133,7 @@ nty_hashtable* CreateHashtable ( unsigned int ( *hashfn ) ( const void* ), // ke
 }
 
 
-void DestroyHashtable ( nty_hashtable* ht )
+void DestroyHashtable ( dk_hashtable* ht )
 {
     if ( IS_FLOW_TABLE ( ht->hashfn ) )
     {
@@ -147,11 +147,11 @@ void DestroyHashtable ( nty_hashtable* ht )
 }
 
 /*----------------------------------------------------------------------------*/
-int StreamHTInsert ( nty_hashtable* ht, void* it )
+int StreamHTInsert ( dk_hashtable* ht, void* it )
 {
     /* create an entry*/
     int idx;
-    nty_tcp_stream* item = ( nty_tcp_stream* ) it;
+    dk_tcp_stream* item = ( dk_tcp_stream* ) it;
 
     assert ( ht );
 
@@ -166,10 +166,10 @@ int StreamHTInsert ( nty_hashtable* ht, void* it )
     return 0;
 }
 /*----------------------------------------------------------------------------*/
-void* StreamHTRemove ( nty_hashtable* ht, void* it )
+void* StreamHTRemove ( dk_hashtable* ht, void* it )
 {
     hash_bucket_head* head;
-    struct _nty_tcp_stream* item = ( struct _nty_tcp_stream* ) it;
+    struct _dk_tcp_stream* item = ( struct _dk_tcp_stream* ) it;
     int idx = ht->hashfn ( item );
 
     head = &ht->ht_stream[idx];
@@ -179,11 +179,11 @@ void* StreamHTRemove ( nty_hashtable* ht, void* it )
     return ( item );
 }
 /*----------------------------------------------------------------------------*/
-void* StreamHTSearch ( nty_hashtable* ht, const void* it )
+void* StreamHTSearch ( dk_hashtable* ht, const void* it )
 {
     int idx;
-    const nty_tcp_stream* item = ( const nty_tcp_stream* ) it;
-    nty_tcp_stream* walk;
+    const dk_tcp_stream* item = ( const dk_tcp_stream* ) it;
+    dk_tcp_stream* walk;
     hash_bucket_head* head;
 
     idx = ht->hashfn ( item );
@@ -200,11 +200,11 @@ void* StreamHTSearch ( nty_hashtable* ht, const void* it )
     return NULL;
 }
 
-int ListenerHTInsert ( nty_hashtable* ht, void* it )
+int ListenerHTInsert ( dk_hashtable* ht, void* it )
 {
     /* create an entry*/
     int idx;
-    struct _nty_tcp_listener* item = ( struct _nty_tcp_listener* ) it;
+    struct _dk_tcp_listener* item = ( struct _dk_tcp_listener* ) it;
 
     assert ( ht );
 
@@ -218,10 +218,10 @@ int ListenerHTInsert ( nty_hashtable* ht, void* it )
 }
 /*----------------------------------------------------------------------------*/
 void*
-ListenerHTRemove ( nty_hashtable* ht, void* it )
+ListenerHTRemove ( dk_hashtable* ht, void* it )
 {
     list_bucket_head* head;
-    struct _nty_tcp_listener* item = ( struct _nty_tcp_listener* ) it;
+    struct _dk_tcp_listener* item = ( struct _dk_tcp_listener* ) it;
     int idx = ht->hashfn ( item );
 
     head = &ht->ht_listener[idx];
@@ -232,15 +232,15 @@ ListenerHTRemove ( nty_hashtable* ht, void* it )
 }
 /*----------------------------------------------------------------------------*/
 void*
-ListenerHTSearch ( nty_hashtable* ht, const void* it )
+ListenerHTSearch ( dk_hashtable* ht, const void* it )
 {
     int idx;
-    nty_tcp_listener item;
+    dk_tcp_listener item;
     uint16_t port = * ( ( uint16_t* ) it );
-    nty_tcp_listener* walk;
+    dk_tcp_listener* walk;
     list_bucket_head* head;
 
-    struct _nty_socket s;
+    struct _dk_socket s;
 
     s.s_addr.sin_port = port;
     item.s = &s;

@@ -37,7 +37,7 @@
  */
 
 
-int nty_nic_init ( nty_thread_context* tctx, const char* ifname )
+int dk_nic_init ( dk_thread_context* tctx, const char* ifname )
 {
 
     if ( tctx == NULL )
@@ -45,7 +45,7 @@ int nty_nic_init ( nty_thread_context* tctx, const char* ifname )
         return -1;
     }
 
-    nty_nic_context* ctx = calloc ( 1, sizeof ( nty_nic_context ) );
+    dk_nic_context* ctx = calloc ( 1, sizeof ( dk_nic_context ) );
     if ( ctx == NULL )
     {
         return -2;
@@ -66,7 +66,7 @@ int nty_nic_init ( nty_thread_context* tctx, const char* ifname )
 }
 
 
-int nty_nic_read ( nty_nic_context* ctx, unsigned char** stream )
+int dk_nic_read ( dk_nic_context* ctx, unsigned char** stream )
 {
 
     if ( ctx == NULL )
@@ -80,7 +80,7 @@ int nty_nic_read ( nty_nic_context* ctx, unsigned char** stream )
     return 0;
 }
 
-int nty_nic_write ( nty_nic_context* ctx, const void* stream, int length )
+int dk_nic_write ( dk_nic_context* ctx, const void* stream, int length )
 {
 
     if ( ctx == NULL )
@@ -101,7 +101,7 @@ int nty_nic_write ( nty_nic_context* ctx, const void* stream, int length )
     return 0;
 }
 
-int nty_nic_send_pkts ( nty_nic_context* ctx, int nif )
+int dk_nic_send_pkts ( dk_nic_context* ctx, int nif )
 {
 
     if ( ctx->snd_pkt_size == 0 )
@@ -122,19 +122,19 @@ tx_again:
     return 0;
 }
 
-unsigned char* nty_nic_get_wbuffer ( nty_nic_context* ctx, int nif, uint16_t pktsize )
+unsigned char* dk_nic_get_wbuffer ( dk_nic_context* ctx, int nif, uint16_t pktsize )
 {
 #if 0
     if ( ctx->snd_pkt_size != 0 )
     {
-        nty_nic_send_pkts ( ctx, nif );
+        dk_nic_send_pkts ( ctx, nif );
     }
 #endif
     ctx->snd_pkt_size = pktsize;
     return ( uint8_t* ) ctx->snd_pktbuf;
 }
 
-int nty_nic_recv_pkts ( nty_nic_context* ctx, int ifidx )
+int dk_nic_recv_pkts ( dk_nic_context* ctx, int ifidx )
 {
 
     assert ( ctx != NULL );
@@ -173,14 +173,14 @@ int nty_nic_recv_pkts ( nty_nic_context* ctx, int ifidx )
     return count;
 }
 
-unsigned char* nty_nic_get_rbuffer ( nty_nic_context* ctx, int nif, uint16_t* len )
+unsigned char* dk_nic_get_rbuffer ( dk_nic_context* ctx, int nif, uint16_t* len )
 {
     *len = ctx->rcv_pkt_len[nif];
     return ctx->rcv_pktbuf[nif];
 }
 
 
-int nty_nic_select ( nty_nic_context* ctx )
+int dk_nic_select ( dk_nic_context* ctx )
 {
 
     int rc = 0;
@@ -209,12 +209,12 @@ int nty_nic_select ( nty_nic_context* ctx )
 
 }
 
-nty_nic_handler nty_netmap_handler =
+dk_nic_handler dk_netmap_handler =
 {
-    .init = nty_nic_init,
-    .read = nty_nic_read,
-    .write = nty_nic_write,
-    .get_wbuffer = nty_nic_get_wbuffer,
+    .init = dk_nic_init,
+    .read = dk_nic_read,
+    .write = dk_nic_write,
+    .get_wbuffer = dk_nic_get_wbuffer,
 };
 
 

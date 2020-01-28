@@ -34,7 +34,7 @@
 
 #include <pthread.h>
 
-static int nty_arp_output ( nty_tcp_manager* tcp, int nif, int opcode,
+static int dk_arp_output ( dk_tcp_manager* tcp, int nif, int opcode,
                             uint32_t dst_ip, unsigned char* dst_haddr, unsigned char* target_haddr );
 
 
@@ -52,22 +52,22 @@ enum arp_opcode
 };
 
 
-typedef struct _nty_arp_queue_entry
+typedef struct _dk_arp_queue_entry
 {
     uint32_t ip;
     int nif_out;
     uint32_t ts_out;
-    TAILQ_ENTRY ( _nty_arp_queue_entry ) arp_link;
-} nty_arp_queue_entry;
+    TAILQ_ENTRY ( _dk_arp_queue_entry ) arp_link;
+} dk_arp_queue_entry;
 
-typedef struct _nty_arp_manager
+typedef struct _dk_arp_manager
 {
-    TAILQ_HEAD (, _nty_arp_queue_entry ) list;
+    TAILQ_HEAD (, _dk_arp_queue_entry ) list;
     pthread_mutex_t lock;
-} nty_arp_manager;
+} dk_arp_manager;
 
-nty_arp_manager global_arp_manager;
-nty_arp_table* global_arp_table = NULL;
+dk_arp_manager global_arp_manager;
+dk_arp_table* global_arp_table = NULL;
 
 
 
@@ -130,7 +130,7 @@ void print_mac ( unsigned char* mac )
 }
 
 
-void nty_arp_pkt ( struct arppkt* arp, struct arppkt* arp_rt, char* hmac )
+void dk_arp_pkt ( struct arppkt* arp, struct arppkt* arp_rt, char* hmac )
 {
 
     memcpy ( arp_rt, arp, sizeof ( struct arppkt ) );
@@ -151,34 +151,34 @@ void nty_arp_pkt ( struct arppkt* arp, struct arppkt* arp_rt, char* hmac )
 
 }
 
-extern nty_tcp_manager* nty_get_tcp_manager ( void );
+extern dk_tcp_manager* dk_get_tcp_manager ( void );
 
-int nty_arp_process_request ( struct arphdr* arph )
+int dk_arp_process_request ( struct arphdr* arph )
 {
 
     unsigned char* tmp = GetDestinationHWaddr ( arph->sip );
     if ( !tmp )
     {
-        nty_arp_register_entry ( arph->sip, arph->smac );
+        dk_arp_register_entry ( arph->sip, arph->smac );
     }
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
-    nty_arp_output ( tcp, 0, arp_op_reply, arph->sip, arph->smac, NULL );
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
+    dk_arp_output ( tcp, 0, arp_op_reply, arph->sip, arph->smac, NULL );
 
     return 0;
 }
 
-int nty_arp_process_reply ( struct arphdr* arph )
+int dk_arp_process_reply ( struct arphdr* arph )
 {
     unsigned char* tmp = GetDestinationHWaddr ( arph->sip );
     if ( !tmp )
     {
-        nty_arp_register_entry ( arph->sip, arph->smac );
+        dk_arp_register_entry ( arph->sip, arph->smac );
     }
 
     pthread_mutex_lock ( &global_arp_manager.lock );
 
-    nty_arp_queue_entry* ent = NULL;
+    dk_arp_queue_entry* ent = NULL;
     TAILQ_FOREACH ( ent, &global_arp_manager.list, arp_link )
     {
         if ( ent->ip == arph->sip )
@@ -193,16 +193,16 @@ int nty_arp_process_reply ( struct arphdr* arph )
     return 0;
 }
 
-int nty_arp_init_table ( void )
+int dk_arp_init_table ( void )
 {
-    global_arp_table = ( nty_arp_table* ) calloc ( 1, sizeof ( nty_arp_table ) );
+    global_arp_table = ( dk_arp_table* ) calloc ( 1, sizeof ( dk_arp_table ) );
     if ( !global_arp_table )
     {
         return -1;
     }
 
     global_arp_table->entries = 0;
-    global_arp_table->entry = ( nty_arp_entry* ) calloc ( MAX_ARPENTRY, sizeof ( nty_arp_entry ) );
+    global_arp_table->entry = ( dk_arp_entry* ) calloc ( MAX_ARPENTRY, sizeof ( dk_arp_entry ) );
     if ( !global_arp_table->entry )
     {
         return -1;
@@ -214,7 +214,7 @@ int nty_arp_init_table ( void )
     return 0;
 }
 
-void nty_arp_print_table ( void )
+void dk_arp_print_table ( void )
 {
     int i = 0;
 
@@ -241,7 +241,7 @@ void nty_arp_print_table ( void )
     return ;
 }
 
-int nty_arp_register_entry ( uint32_t ip, const unsigned char* haddr )
+int dk_arp_register_entry ( uint32_t ip, const unsigned char* haddr )
 {
     assert ( global_arp_table != NULL );
 
@@ -257,12 +257,12 @@ int nty_arp_register_entry ( uint32_t ip, const unsigned char* haddr )
     global_arp_table->entries = idx + 1;
 
     printf ( "Learned new arp entry.\n" );
-    nty_arp_print_table();
+    dk_arp_print_table();
 
     return 0;
 }
 
-static int nty_arp_output ( nty_tcp_manager* tcp, int nif, int opcode,
+static int dk_arp_output ( dk_tcp_manager* tcp, int nif, int opcode,
                             uint32_t dst_ip, unsigned char* dst_haddr, unsigned char* target_haddr )
 {
 
@@ -305,12 +305,12 @@ static int nty_arp_output ( nty_tcp_manager* tcp, int nif, int opcode,
     return 0;
 }
 
-void nty_arp_request ( nty_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_ts )
+void dk_arp_request ( dk_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_ts )
 {
 
     unsigned char haddr[ETH_ALEN];
     unsigned char taddr[ETH_ALEN];
-    nty_arp_queue_entry* ent;
+    dk_arp_queue_entry* ent;
 
     pthread_mutex_lock ( &global_arp_manager.lock );
 
@@ -323,7 +323,7 @@ void nty_arp_request ( nty_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_
         }
     }
 
-    ent = ( nty_arp_queue_entry* ) calloc ( 1, sizeof ( nty_arp_queue_entry ) );
+    ent = ( dk_arp_queue_entry* ) calloc ( 1, sizeof ( dk_arp_queue_entry ) );
     ent->ip = ip;
     ent->nif_out = nif;
     ent->ts_out = cur_ts;
@@ -335,11 +335,11 @@ void nty_arp_request ( nty_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_
     memset ( haddr, 0xFF, ETH_ALEN );
     memset ( taddr, 0x00, ETH_ALEN );
 
-    nty_arp_output ( tcp, nif, arp_op_request, ip, haddr, taddr );
+    dk_arp_output ( tcp, nif, arp_op_request, ip, haddr, taddr );
 }
 
 
-int nty_arp_process ( nty_nic_context* ctx, unsigned char* stream )
+int dk_arp_process ( dk_nic_context* ctx, unsigned char* stream )
 {
 
     if ( stream == NULL )
@@ -352,7 +352,7 @@ int nty_arp_process ( nty_nic_context* ctx, unsigned char* stream )
     if ( arp->arp.dip == inet_addr ( NTY_SELF_IP ) )
     {
 #if 0
-        nty_arp_pkt ( arp, &arp_rt, NTY_SELF_MAC );
+        dk_arp_pkt ( arp, &arp_rt, NTY_SELF_MAC );
         NTY_NIC_WRITE ( ctx, &arp_rt, sizeof ( struct arppkt ) );
 #else
 
@@ -360,12 +360,12 @@ int nty_arp_process ( nty_nic_context* ctx, unsigned char* stream )
         {
             case arp_op_request :
             {
-                nty_arp_process_request ( &arp->arp );
+                dk_arp_process_request ( &arp->arp );
                 break;
             }
             case arp_op_reply :
             {
-                nty_arp_process_reply ( &arp->arp );
+                dk_arp_process_reply ( &arp->arp );
                 break;
             }
         }

@@ -32,7 +32,7 @@
 
 
 
-void nty_udp_pkt ( struct udppkt* udp, struct udppkt* udp_rt )
+void dk_udp_pkt ( struct udppkt* udp, struct udppkt* udp_rt )
 {
     memcpy ( udp_rt, udp, sizeof ( struct udppkt ) );
 
@@ -46,7 +46,7 @@ void nty_udp_pkt ( struct udppkt* udp, struct udppkt* udp_rt )
     memcpy ( &udp_rt->udp.dest, &udp->udp.source, sizeof ( udp->udp.dest ) );
 }
 
-int nty_udp_process ( nty_nic_context* ctx, unsigned char* stream )
+int dk_udp_process ( dk_nic_context* ctx, unsigned char* stream )
 {
 
     struct udppkt* udph = ( struct udppkt* ) stream;
@@ -61,8 +61,8 @@ int nty_udp_process ( nty_nic_context* ctx, unsigned char* stream )
 
 
     struct udppkt udph_rt;
-    nty_udp_pkt ( udph, &udph_rt );
-    nty_nic_write ( ctx, &udph_rt, sizeof ( struct udppkt ) );
+    dk_udp_pkt ( udph, &udph_rt );
+    dk_nic_write ( ctx, &udph_rt, sizeof ( struct udppkt ) );
 
     return 0;
 }

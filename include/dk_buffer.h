@@ -59,17 +59,17 @@ enum rb_caller
 #define MIN(a, b) ((a)<(b)?(a):(b))
 
 /*----------------------------------------------------------------------------*/
-typedef struct _nty_sb_manager
+typedef struct _dk_sb_manager
 {
     size_t chunk_size;
     uint32_t cur_num;
     uint32_t cnum;
-    struct _nty_mempool* mp;
-    struct _nty_sb_queue* freeq;
+    struct _dk_mempool* mp;
+    struct _dk_sb_queue* freeq;
 
-} nty_sb_manager;
+} dk_sb_manager;
 
-typedef struct _nty_send_buffer
+typedef struct _dk_send_buffer
 {
     unsigned char* data;
     unsigned char* head;
@@ -82,7 +82,7 @@ typedef struct _nty_send_buffer
 
     uint32_t head_seq;
     uint32_t init_seq;
-} nty_send_buffer;
+} dk_send_buffer;
 
 #ifndef _INDEX_TYPE_
 #define _INDEX_TYPE_
@@ -91,14 +91,14 @@ typedef int32_t signed_index_type;
 #endif
 
 
-typedef struct _nty_sb_queue
+typedef struct _dk_sb_queue
 {
     index_type _capacity;
     volatile index_type _head;
     volatile index_type _tail;
 
-    nty_send_buffer* volatile* _q;
-} nty_sb_queue;
+    dk_send_buffer* volatile* _q;
+} dk_sb_queue;
 
 #define NextIndex(sq, i)    (i != sq->_capacity ? i + 1: 0)
 #define PrevIndex(sq, i)    (i != 0 ? i - 1: sq->_capacity)
@@ -108,27 +108,27 @@ typedef struct _nty_sb_queue
 
 /** rb frag queue **/
 
-typedef struct _nty_rb_frag_queue
+typedef struct _dk_rb_frag_queue
 {
     index_type _capacity;
     volatile index_type _head;
     volatile index_type _tail;
 
-    struct _nty_fragment_ctx* volatile* _q;
-} nty_rb_frag_queue;
+    struct _dk_fragment_ctx* volatile* _q;
+} dk_rb_frag_queue;
 
 
 /** ring buffer **/
 
-typedef struct _nty_fragment_ctx
+typedef struct _dk_fragment_ctx
 {
     uint32_t seq;
     uint32_t len:31,
              is_calloc:1;
-    struct _nty_fragment_ctx* next;
-} nty_fragment_ctx;
+    struct _dk_fragment_ctx* next;
+} dk_fragment_ctx;
 
-typedef struct _nty_ring_buffer
+typedef struct _dk_ring_buffer
 {
     u_char* data;
     u_char* head;
@@ -144,89 +144,89 @@ typedef struct _nty_ring_buffer
     uint32_t head_seq;
     uint32_t init_seq;
 
-    nty_fragment_ctx* fctx;
-} nty_ring_buffer;
+    dk_fragment_ctx* fctx;
+} dk_ring_buffer;
 
-typedef struct _nty_rb_manager
+typedef struct _dk_rb_manager
 {
     size_t chunk_size;
     uint32_t cur_num;
     uint32_t cnum;
 
-    nty_mempool* mp;
-    nty_mempool* frag_mp;
+    dk_mempool* mp;
+    dk_mempool* frag_mp;
 
-    nty_rb_frag_queue* free_fragq;
-    nty_rb_frag_queue* free_fragq_int;
+    dk_rb_frag_queue* free_fragq;
+    dk_rb_frag_queue* free_fragq_int;
 
-} nty_rb_manager;
+} dk_rb_manager;
 
 
 
-typedef struct _nty_stream_queue
+typedef struct _dk_stream_queue
 {
     index_type _capacity;
     volatile index_type _head;
     volatile index_type _tail;
 
-    struct _nty_tcp_stream* volatile* _q;
-} nty_stream_queue;
+    struct _dk_tcp_stream* volatile* _q;
+} dk_stream_queue;
 
-typedef struct _nty_stream_queue_int
+typedef struct _dk_stream_queue_int
 {
-    struct _nty_tcp_stream** array;
+    struct _dk_tcp_stream** array;
     int size;
 
     int first;
     int last;
     int count;
 
-} nty_stream_queue_int;
+} dk_stream_queue_int;
 
 
-nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum );
-nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum );
+dk_sb_manager* dk_sbmanager_create ( size_t chunk_size, uint32_t cnum );
+dk_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum );
 
 
-nty_stream_queue* CreateStreamQueue ( int capacity );
+dk_stream_queue* CreateStreamQueue ( int capacity );
 
 
-nty_stream_queue_int* CreateInternalStreamQueue ( int size );
-void DestroyInternalStreamQueue ( nty_stream_queue_int* sq );
+dk_stream_queue_int* CreateInternalStreamQueue ( int size );
+void DestroyInternalStreamQueue ( dk_stream_queue_int* sq );
 
 
-nty_send_buffer* SBInit ( nty_sb_manager* sbm, uint32_t init_seq );
-void SBFree ( nty_sb_manager* sbm, nty_send_buffer* buf );
-size_t SBPut ( nty_sb_manager* sbm, nty_send_buffer* buf, const void* data, size_t len );
-int SBEnqueue ( nty_sb_queue* sq, nty_send_buffer* buf );
-size_t SBRemove ( nty_sb_manager* sbm, nty_send_buffer* buf, size_t len );
+dk_send_buffer* SBInit ( dk_sb_manager* sbm, uint32_t init_seq );
+void SBFree ( dk_sb_manager* sbm, dk_send_buffer* buf );
+size_t SBPut ( dk_sb_manager* sbm, dk_send_buffer* buf, const void* data, size_t len );
+int SBEnqueue ( dk_sb_queue* sq, dk_send_buffer* buf );
+size_t SBRemove ( dk_sb_manager* sbm, dk_send_buffer* buf, size_t len );
 
 
-size_t RBRemove ( nty_rb_manager* rbm, nty_ring_buffer* buff, size_t len, int option );
-int RBPut ( nty_rb_manager* rbm, nty_ring_buffer* buff,
+size_t RBRemove ( dk_rb_manager* rbm, dk_ring_buffer* buff, size_t len, int option );
+int RBPut ( dk_rb_manager* rbm, dk_ring_buffer* buff,
             void* data, uint32_t len, uint32_t cur_seq );
-void RBFree ( nty_rb_manager* rbm, nty_ring_buffer* buff );
+void RBFree ( dk_rb_manager* rbm, dk_ring_buffer* buff );
 
-int StreamInternalEnqueue ( nty_stream_queue_int* sq, struct _nty_tcp_stream* stream );
-struct _nty_tcp_stream* StreamInternalDequeue ( nty_stream_queue_int* sq );
+int StreamInternalEnqueue ( dk_stream_queue_int* sq, struct _dk_tcp_stream* stream );
+struct _dk_tcp_stream* StreamInternalDequeue ( dk_stream_queue_int* sq );
 
 
 /*** ******************************** sb queue ******************************** ***/
 
 
-nty_sb_queue* CreateSBQueue ( int capacity );
-int StreamQueueIsEmpty ( nty_stream_queue* sq );
+dk_sb_queue* CreateSBQueue ( int capacity );
+int StreamQueueIsEmpty ( dk_stream_queue* sq );
 
 
-nty_send_buffer* SBDequeue ( nty_sb_queue* sq );
+dk_send_buffer* SBDequeue ( dk_sb_queue* sq );
 
-nty_ring_buffer* RBInit ( nty_rb_manager* rbm, uint32_t init_seq );
+dk_ring_buffer* RBInit ( dk_rb_manager* rbm, uint32_t init_seq );
 
 
-struct _nty_tcp_stream* StreamDequeue ( nty_stream_queue* sq );
-int StreamEnqueue ( nty_stream_queue* sq, struct _nty_tcp_stream* stream );
+struct _dk_tcp_stream* StreamDequeue ( dk_stream_queue* sq );
+int StreamEnqueue ( dk_stream_queue* sq, struct _dk_tcp_stream* stream );
 
-void DestroyStreamQueue ( nty_stream_queue* sq );
+void DestroyStreamQueue ( dk_stream_queue* sq );
 
 
 

@@ -55,7 +55,7 @@
 
 
 
-#include "nty_api.h"
+#include "dk_api.h"
 
 #include "dk_epoll.h"
 

@@ -2,7 +2,7 @@
 CC = gcc
 #CC = /usr/bin/gcc-5
 SUB_DIRS = app/ src/
-BIN = nty_stack
+BIN = dk_stack
 FLAG = -lpthread -lhugetlbfs -lrt -g -W -Wall -Wpointer-arith -Wno-unused-parameter -Werror -Wno-unused-function -I $(ROOT_DIR)/include
 
 ROOT_DIR = $(shell pwd)

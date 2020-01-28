@@ -62,7 +62,7 @@
 #define IDLE_POLL_COUNT         10
 #define IDLE_POLL_WAIT          1
 
-typedef struct _nty_nic_context
+typedef struct _dk_nic_context
 {
     struct nm_desc* nmr;
     unsigned char snd_pktbuf[ETHERNET_FRAME_SIZE];
@@ -71,41 +71,41 @@ typedef struct _nty_nic_context
     uint16_t snd_pkt_size;
     uint8_t dev_poll_flag;
     uint8_t idle_poll_count;
-} nty_nic_context;
+} dk_nic_context;
 
 
-typedef struct _nty_nic_handler
+typedef struct _dk_nic_handler
 {
-    int ( *init ) ( nty_thread_context* ctx, const char* ifname );
-    int ( *read ) ( nty_nic_context* ctx, unsigned char** stream );
-    int ( *write ) ( nty_nic_context* ctx, const void* stream, int length );
-    unsigned char* ( *get_wbuffer ) ( nty_nic_context* ctx, int nif, uint16_t pktsize );
-} nty_nic_handler;
+    int ( *init ) ( dk_thread_context* ctx, const char* ifname );
+    int ( *read ) ( dk_nic_context* ctx, unsigned char** stream );
+    int ( *write ) ( dk_nic_context* ctx, const void* stream, int length );
+    unsigned char* ( *get_wbuffer ) ( dk_nic_context* ctx, int nif, uint16_t pktsize );
+} dk_nic_handler;
 
-unsigned char* nty_nic_get_wbuffer ( nty_nic_context* ctx, int nif, uint16_t pktsize );
-unsigned char* nty_nic_get_rbuffer ( nty_nic_context* ctx, int nif, uint16_t* len );
+unsigned char* dk_nic_get_wbuffer ( dk_nic_context* ctx, int nif, uint16_t pktsize );
+unsigned char* dk_nic_get_rbuffer ( dk_nic_context* ctx, int nif, uint16_t* len );
 
-int nty_nic_send_pkts ( nty_nic_context* ctx, int nif );
-int nty_nic_recv_pkts ( nty_nic_context* ctx, int ifidx );
+int dk_nic_send_pkts ( dk_nic_context* ctx, int nif );
+int dk_nic_recv_pkts ( dk_nic_context* ctx, int ifidx );
 
-int nty_nic_read ( nty_nic_context* ctx, unsigned char** stream );
-int nty_nic_write ( nty_nic_context* ctx, const void* stream, int length );
+int dk_nic_read ( dk_nic_context* ctx, unsigned char** stream );
+int dk_nic_write ( dk_nic_context* ctx, const void* stream, int length );
 
 
 
-int nty_nic_init ( nty_thread_context* tctx, const char* ifname );
-int nty_nic_select ( nty_nic_context* ctx );
+int dk_nic_init ( dk_thread_context* tctx, const char* ifname );
+int dk_nic_select ( dk_nic_context* ctx );
 
 
 #if 0
-extern nty_nic_handler nty_netmap_handler;
-static nty_nic_handler* nty_current_handler = &nty_netmap_handler;
+extern dk_nic_handler dk_netmap_handler;
+static dk_nic_handler* dk_current_handler = &dk_netmap_handler;
 
 
-#define NTY_NIC_INIT(x, y)              nty_current_handler->init(x, y)
-#define NTY_NIC_WRITE(x, y, z)          nty_current_handler->write(x, y, z)
-#define NTY_NIC_READ(x, y)              nty_current_handler->read(x, y)
-#define NTY_NIC_GET_WBUFFER(x, y, z)    nty_current_handler->get_wbuffer(x, y, z)
+#define NTY_NIC_INIT(x, y)              dk_current_handler->init(x, y)
+#define NTY_NIC_WRITE(x, y, z)          dk_current_handler->write(x, y, z)
+#define NTY_NIC_READ(x, y)              dk_current_handler->read(x, y)
+#define NTY_NIC_GET_WBUFFER(x, y, z)    dk_current_handler->get_wbuffer(x, y, z)
 #endif
 
 

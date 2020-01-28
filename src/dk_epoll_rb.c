@@ -42,7 +42,7 @@
 //static pthread_mutex_t epmutex;
 
 
-extern nty_tcp_manager* nty_get_tcp_manager ( void );
+extern dk_tcp_manager* dk_get_tcp_manager ( void );
 
 int epoll_create ( int size )
 {
@@ -52,23 +52,23 @@ int epoll_create ( int size )
         return -1;
     }
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    struct _nty_socket* epsocket = nty_socket_allocate ( NTY_TCP_SOCK_EPOLL );
+    struct _dk_socket* epsocket = dk_socket_allocate ( NTY_TCP_SOCK_EPOLL );
     if ( epsocket == NULL )
     {
-        nty_trace_epoll ( "malloc failed\n" );
+        dk_trace_epoll ( "malloc failed\n" );
         return -1;
     }
 
     struct eventpoll* ep = ( struct eventpoll* ) calloc ( 1, sizeof ( struct eventpoll ) );
     if ( !ep )
     {
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -1;
     }
 
@@ -79,7 +79,7 @@ int epoll_create ( int size )
     if ( pthread_mutex_init ( &ep->mtx, NULL ) )
     {
         free ( ep );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -2;
     }
 
@@ -87,7 +87,7 @@ int epoll_create ( int size )
     {
         pthread_mutex_destroy ( &ep->mtx );
         free ( ep );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -2;
     }
 
@@ -96,7 +96,7 @@ int epoll_create ( int size )
         pthread_mutex_destroy ( &ep->cdmtx );
         pthread_mutex_destroy ( &ep->mtx );
         free ( ep );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -2;
     }
 
@@ -107,7 +107,7 @@ int epoll_create ( int size )
         pthread_mutex_destroy ( &ep->mtx );
         free ( ep );
 
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -2;
     }
 
@@ -120,17 +120,17 @@ int epoll_create ( int size )
 int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    nty_trace_epoll ( " epoll_ctl --> 1111111:%d, sockid:%d\n", epid, sockid );
-    struct _nty_socket* epsocket = tcp->fdtable->sockfds[epid];
-    //struct _nty_socket *socket = tcp->fdtable->sockfds[sockid];
+    dk_trace_epoll ( " epoll_ctl --> 1111111:%d, sockid:%d\n", epid, sockid );
+    struct _dk_socket* epsocket = tcp->fdtable->sockfds[epid];
+    //struct _dk_socket *socket = tcp->fdtable->sockfds[sockid];
 
-    //nty_trace_epoll(" epoll_ctl --> 1111111:%d, sockid:%d\n", epsocket->id, sockid);
+    //dk_trace_epoll(" epoll_ctl --> 1111111:%d, sockid:%d\n", epsocket->id, sockid);
     if ( epsocket->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = -EBADF;
@@ -143,7 +143,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
         return -1;
     }
 
-    nty_trace_epoll ( " epoll_ctl --> eventpoll\n" );
+    dk_trace_epoll ( " epoll_ctl --> eventpoll\n" );
 
     struct eventpoll* ep = ( struct eventpoll* ) epsocket->ep;
     if ( !ep || ( !event && op != EPOLL_CTL_DEL ) )
@@ -162,7 +162,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
         struct epitem* epi = RB_FIND ( _epoll_rb_socket, &ep->rbr, &tmp );
         if ( epi )
         {
-            nty_trace_epoll ( "rbtree is exist\n" );
+            dk_trace_epoll ( "rbtree is exist\n" );
             pthread_mutex_unlock ( &ep->mtx );
             return -1;
         }
@@ -195,7 +195,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
         struct epitem* epi = RB_FIND ( _epoll_rb_socket, &ep->rbr, &tmp );
         if ( !epi )
         {
-            nty_trace_epoll ( "rbtree no exist\n" );
+            dk_trace_epoll ( "rbtree no exist\n" );
             pthread_mutex_unlock ( &ep->mtx );
             return -1;
         }
@@ -203,7 +203,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
         epi = RB_REMOVE ( _epoll_rb_socket, &ep->rbr, epi );
         if ( !epi )
         {
-            nty_trace_epoll ( "rbtree is no exist\n" );
+            dk_trace_epoll ( "rbtree is no exist\n" );
             pthread_mutex_unlock ( &ep->mtx );
             return -1;
         }
@@ -234,7 +234,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
     }
     else
     {
-        nty_trace_epoll ( "op is no exist\n" );
+        dk_trace_epoll ( "op is no exist\n" );
         assert ( 0 );
     }
 
@@ -244,14 +244,14 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event )
 int epoll_wait ( int epid, struct epoll_event* events, int maxevents, int timeout )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    //nty_socket_map *epsocket = &tcp->smap[epid];
-    struct _nty_socket* epsocket = tcp->fdtable->sockfds[epid];
+    //dk_socket_map *epsocket = &tcp->smap[epid];
+    struct _dk_socket* epsocket = tcp->fdtable->sockfds[epid];
     if ( epsocket == NULL )
     {
         return -1;
@@ -280,7 +280,7 @@ int epoll_wait ( int epid, struct epoll_event* events, int maxevents, int timeou
     {
         if ( errno == EDEADLK )
         {
-            nty_trace_epoll ( "epoll lock blocked\n" );
+            dk_trace_epoll ( "epoll lock blocked\n" );
         }
         assert ( 0 );
     }
@@ -315,7 +315,7 @@ int epoll_wait ( int epid, struct epoll_event* events, int maxevents, int timeou
             int ret = pthread_cond_timedwait ( &ep->cond, &ep->cdmtx, &deadline );
             if ( ret && ret != ETIMEDOUT )
             {
-                nty_trace_epoll ( "pthread_cond_timewait\n" );
+                dk_trace_epoll ( "pthread_cond_timewait\n" );
 
                 pthread_mutex_unlock ( &ep->cdmtx );
 
@@ -329,7 +329,7 @@ int epoll_wait ( int epid, struct epoll_event* events, int maxevents, int timeou
             int ret = pthread_cond_wait ( &ep->cond, &ep->cdmtx );
             if ( ret )
             {
-                nty_trace_epoll ( "pthread_cond_wait\n" );
+                dk_trace_epoll ( "pthread_cond_wait\n" );
                 pthread_mutex_unlock ( &ep->cdmtx );
 
                 return -1;
@@ -379,7 +379,7 @@ int epoll_event_callback ( struct eventpoll* ep, int sockid, uint32_t event )
     struct epitem* epi = RB_FIND ( _epoll_rb_socket, &ep->rbr, &tmp );
     if ( !epi )
     {
-        nty_trace_epoll ( "rbtree not exist\n" );
+        dk_trace_epoll ( "rbtree not exist\n" );
         assert ( 0 );
     }
     if ( epi->rdy )
@@ -388,7 +388,7 @@ int epoll_event_callback ( struct eventpoll* ep, int sockid, uint32_t event )
         return 1;
     }
 
-    nty_trace_epoll ( "epoll_event_callback --> %d\n", epi->sockfd );
+    dk_trace_epoll ( "epoll_event_callback --> %d\n", epi->sockfd );
 
     pthread_spin_lock ( &ep->lock );
     epi->rdy = 1;
@@ -433,10 +433,10 @@ static int epoll_destroy ( struct eventpoll* ep )
     return 0;
 }
 
-int nty_epoll_close_socket ( int epid )
+int dk_epoll_close_socket ( int epid )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;

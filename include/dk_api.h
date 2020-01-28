@@ -35,13 +35,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-int nty_socket ( int domain, int type, int protocol );
-int nty_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen );
-int nty_listen ( int sockid, int backlog );
-int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen );
-ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags );
-ssize_t nty_send ( int sockid, const char* buf, size_t len );
-int nty_close ( int sockid );
+int dk_socket ( int domain, int type, int protocol );
+int dk_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen );
+int dk_listen ( int sockid, int backlog );
+int dk_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen );
+ssize_t dk_recv ( int sockid, char* buf, size_t len, int flags );
+ssize_t dk_send ( int sockid, const char* buf, size_t len );
+int dk_close ( int sockid );
 
 void dk_net_init ( void );
 

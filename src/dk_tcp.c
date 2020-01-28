@@ -35,9 +35,9 @@
 
 #include <pthread.h>
 
-nty_tcp_manager* nty_tcp = NULL;
+dk_tcp_manager* dk_tcp = NULL;
 #if 0
-static inline int nty_tcp_stream_cmp ( nty_tcp_stream* ts1, nty_tcp_stream* ts2 )
+static inline int dk_tcp_stream_cmp ( dk_tcp_stream* ts1, dk_tcp_stream* ts2 )
 {
 
     if ( ts1->saddr < ts2->saddr )
@@ -67,7 +67,7 @@ static inline int nty_tcp_stream_cmp ( nty_tcp_stream* ts1, nty_tcp_stream* ts2 
 }
 
 
-static inline int nty_tcp_timer_cmp ( nty_tcp_stream* ts1, nty_tcp_stream* ts2 )
+static inline int dk_tcp_timer_cmp ( dk_tcp_stream* ts1, dk_tcp_stream* ts2 )
 {
 
     if ( ts1->interval < ts2->interval )
@@ -87,37 +87,37 @@ static inline int nty_tcp_timer_cmp ( nty_tcp_stream* ts1, nty_tcp_stream* ts2 )
 #endif
 
 
-static int nty_tcp_process_payload ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream,
+static int dk_tcp_process_payload ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream,
                                      uint32_t cur_ts, uint8_t* payload, uint32_t seq, int payloadlen );
-static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts,
+static void dk_tcp_process_ack ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts,
                                   struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq, uint16_t window, int payloadlen );
-static int nty_tcp_process_rst ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t ack_seq );
+static int dk_tcp_process_rst ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t ack_seq );
 
 extern unsigned short in_cksum ( unsigned short* addr, int len );
 
-extern void UpdateTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void AddtoRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void UpdateRetransmissionTimer ( nty_tcp_manager* tcp,
-                                        nty_tcp_stream* cur_stream, uint32_t cur_ts );
-extern void AddtoTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts );
-extern void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream );
-extern void RemoveFromRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void AddtoTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void RemoveFromTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
+extern void UpdateTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void AddtoRTOList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void UpdateRetransmissionTimer ( dk_tcp_manager* tcp,
+                                        dk_tcp_stream* cur_stream, uint32_t cur_ts );
+extern void AddtoTimewaitList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts );
+extern void DestroyTcpStream ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
+extern void RemoveFromRTOList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void AddtoTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void RemoveFromTimewaitList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
 extern void InitializeTCPStreamManager();
-extern void RemoveFromTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void nty_tcp_enqueue_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t opt ) ;
-extern void nty_tcp_addto_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern int nty_tcp_parse_timestamp ( nty_tcp_timestamp* ts, uint8_t* tcpopt, int len );
+extern void RemoveFromTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void dk_tcp_enqueue_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t opt ) ;
+extern void dk_tcp_addto_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern int dk_tcp_parse_timestamp ( dk_tcp_timestamp* ts, uint8_t* tcpopt, int len );
 
 
 
-nty_tcp_manager* nty_get_tcp_manager ( void )
+dk_tcp_manager* dk_get_tcp_manager ( void )
 {
-    return nty_tcp;
+    return dk_tcp;
 }
 
-static inline uint16_t nty_calculate_option ( uint8_t flags )
+static inline uint16_t dk_calculate_option ( uint8_t flags )
 {
     uint16_t optlen = 0;
 
@@ -138,7 +138,7 @@ static inline uint16_t nty_calculate_option ( uint8_t flags )
 }
 
 
-uint16_t nty_tcp_calculate_checksum ( uint16_t* buf, uint16_t len, uint32_t saddr, uint32_t daddr )
+uint16_t dk_tcp_calculate_checksum ( uint16_t* buf, uint16_t len, uint32_t saddr, uint32_t daddr )
 {
     uint32_t sum;
     uint16_t* w;
@@ -176,7 +176,7 @@ uint16_t nty_tcp_calculate_checksum ( uint16_t* buf, uint16_t len, uint32_t sadd
 
 
 
-static void nty_tcp_generate_timestamp ( nty_tcp_stream* cur_stream, uint8_t* tcpopt, uint32_t cur_ts )
+static void dk_tcp_generate_timestamp ( dk_tcp_stream* cur_stream, uint8_t* tcpopt, uint32_t cur_ts )
 {
     uint32_t* ts = ( uint32_t* ) ( tcpopt+2 );
 
@@ -187,7 +187,7 @@ static void nty_tcp_generate_timestamp ( nty_tcp_stream* cur_stream, uint8_t* tc
     ts[1] = htonl ( cur_stream->rcv->ts_recent );
 }
 
-static void nty_tcp_generate_options ( nty_tcp_stream* cur_stream, uint32_t cur_ts,
+static void dk_tcp_generate_options ( dk_tcp_stream* cur_stream, uint32_t cur_ts,
                                        uint8_t flags, uint8_t* tcpopt, uint16_t optlen )
 {
 
@@ -205,7 +205,7 @@ static void nty_tcp_generate_options ( nty_tcp_stream* cur_stream, uint32_t cur_
         tcpopt[i++] = TCP_OPT_NOP;
         tcpopt[i++] = TCP_OPT_NOP;
 
-        nty_tcp_generate_timestamp ( cur_stream, tcpopt+i, cur_ts );
+        dk_tcp_generate_timestamp ( cur_stream, tcpopt+i, cur_ts );
         i += NTY_TCPOPT_TIMESTAMP_LEN;
 
         tcpopt[i++] = TCP_OPT_NOP;
@@ -219,14 +219,14 @@ static void nty_tcp_generate_options ( nty_tcp_stream* cur_stream, uint32_t cur_
     {
         tcpopt[i++] = TCP_OPT_NOP;
         tcpopt[i++] = TCP_OPT_NOP;
-        nty_tcp_generate_timestamp ( cur_stream, tcpopt + i, cur_ts );
+        dk_tcp_generate_timestamp ( cur_stream, tcpopt + i, cur_ts );
         i += NTY_TCPOPT_TIMESTAMP_LEN;
     }
 
     assert ( i == optlen );
 }
 
-uint16_t nty_calculate_chksum ( uint16_t* buf, uint16_t len, uint32_t saddr, uint32_t daddr )
+uint16_t dk_calculate_chksum ( uint16_t* buf, uint16_t len, uint32_t saddr, uint32_t daddr )
 {
     uint32_t sum;
     uint16_t* w;
@@ -262,7 +262,7 @@ uint16_t nty_calculate_chksum ( uint16_t* buf, uint16_t len, uint32_t saddr, uin
     return ( uint16_t ) sum;
 }
 
-nty_sender* nty_tcp_getsender ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+dk_sender* dk_tcp_getsender ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
 #if NTY_ENABLE_MULTI_NIC
     if ( cur_stream->snd->nif_out < 0 )
@@ -278,9 +278,9 @@ nty_sender* nty_tcp_getsender ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream
 #endif
 }
 
-void nty_tcp_addto_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_addto_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
     assert ( sender != NULL );
 
     if ( !cur_stream->snd->on_ack_list )
@@ -291,9 +291,9 @@ void nty_tcp_addto_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     }
 }
 
-void nty_tcp_addto_controllist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_addto_controllist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
     assert ( sender != NULL );
 
     if ( !cur_stream->snd->on_control_list )
@@ -304,9 +304,9 @@ void nty_tcp_addto_controllist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_strea
     }
 }
 
-void nty_tcp_addto_sendlist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_addto_sendlist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
     assert ( sender != NULL );
 
     if ( !cur_stream->snd->sndbuf )
@@ -315,7 +315,7 @@ void nty_tcp_addto_sendlist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
         return ;
     }
 
-    nty_trace_tcp ( "nty_tcp_addto_sendlist --> %d\n", cur_stream->snd->on_send_list );
+    dk_trace_tcp ( "dk_tcp_addto_sendlist --> %d\n", cur_stream->snd->on_send_list );
     if ( !cur_stream->snd->on_send_list )
     {
         cur_stream->snd->on_send_list = 1;
@@ -324,9 +324,9 @@ void nty_tcp_addto_sendlist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     }
 }
 
-void nty_tcp_remove_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_remove_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
 
     if ( cur_stream->snd->on_ack_list )
     {
@@ -337,9 +337,9 @@ void nty_tcp_remove_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
 }
 
 
-void nty_tcp_remove_controllist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_remove_controllist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
 
     if ( cur_stream->snd->on_control_list )
     {
@@ -349,9 +349,9 @@ void nty_tcp_remove_controllist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
     }
 }
 
-void nty_tcp_remove_sendlist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void dk_tcp_remove_sendlist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
-    nty_sender* sender = nty_tcp_getsender ( tcp, cur_stream );
+    dk_sender* sender = dk_tcp_getsender ( tcp, cur_stream );
 
     if ( cur_stream->snd->on_send_list )
     {
@@ -362,7 +362,7 @@ void nty_tcp_remove_sendlist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream 
 }
 
 
-void nty_tcp_parse_options ( nty_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t* tcpopt, int len )
+void dk_tcp_parse_options ( dk_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t* tcpopt, int len )
 {
 
     int i = 0;
@@ -403,7 +403,7 @@ void nty_tcp_parse_options ( nty_tcp_stream* cur_stream, uint32_t cur_ts, uint8_
             else if ( opt == TCP_OPT_SACK_PERMIT )
             {
                 cur_stream->sack_permit = 1;
-                nty_trace_tcp ( "Remote SACK permited.\n" );
+                dk_trace_tcp ( "Remote SACK permited.\n" );
 
             }
             else if ( opt == TCP_OPT_TIMESTAMP )
@@ -423,14 +423,14 @@ void nty_tcp_parse_options ( nty_tcp_stream* cur_stream, uint32_t cur_ts, uint8_
 
 }
 
-void nty_tcp_enqueue_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t opt )
+void dk_tcp_enqueue_acklist ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts, uint8_t opt )
 {
     if ( ! ( cur_stream->state == NTY_TCP_ESTABLISHED ||
              cur_stream->state == NTY_TCP_CLOSE_WAIT ||
              cur_stream->state == NTY_TCP_FIN_WAIT_1 ||
              cur_stream->state == NTY_TCP_FIN_WAIT_2 ) )
     {
-        nty_trace_tcp ( "Stream %d: Enqueueing ack at state %d\n",
+        dk_trace_tcp ( "Stream %d: Enqueueing ack at state %d\n",
                         cur_stream->id, cur_stream->state );
     }
 
@@ -453,11 +453,11 @@ void nty_tcp_enqueue_acklist ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream,
         cur_stream->snd->is_wack = 1;
     }
 
-    nty_tcp_addto_acklist ( tcp, cur_stream );
+    dk_tcp_addto_acklist ( tcp, cur_stream );
 }
 
 
-int nty_tcp_parse_timestamp ( nty_tcp_timestamp* ts, uint8_t* tcpopt, int len )
+int dk_tcp_parse_timestamp ( dk_tcp_timestamp* ts, uint8_t* tcpopt, int len )
 {
 
     int i;
@@ -498,17 +498,17 @@ int nty_tcp_parse_timestamp ( nty_tcp_timestamp* ts, uint8_t* tcpopt, int len )
 }
 
 
-int nty_tcppkt_alone ( nty_tcp_manager* tcp,
+int dk_tcppkt_alone ( dk_tcp_manager* tcp,
                        uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport,
                        uint32_t seq, uint32_t ack_seq, uint16_t window, uint8_t flags,
                        uint8_t* payload, uint16_t payloadlen,
                        uint32_t cur_ts, uint32_t echo_ts )
 {
 
-    int optlen = nty_calculate_option ( flags );
+    int optlen = dk_calculate_option ( flags );
     if ( payloadlen > TCP_DEFAULT_MSS + optlen )
     {
-        nty_trace_tcp ( "Payload size exceeds MSS.\n" );
+        dk_trace_tcp ( "Payload size exceeds MSS.\n" );
         assert ( 0 );
         return -1;
     }
@@ -561,7 +561,7 @@ int nty_tcppkt_alone ( nty_tcp_manager* tcp,
     {
         memcpy ( ( uint8_t* ) tcph + TCP_HEADER_LEN + optlen, payload, payloadlen );
     }
-    tcph->check = nty_calculate_chksum ( ( uint16_t* ) tcph,
+    tcph->check = dk_calculate_chksum ( ( uint16_t* ) tcph,
                                          TCP_HEADER_LEN + optlen + payloadlen, saddr, daddr );
 
     if ( tcph->syn || tcph->fin )
@@ -571,20 +571,20 @@ int nty_tcppkt_alone ( nty_tcp_manager* tcp,
     return payloadlen;
 }
 
-int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
+int dk_tcp_send_tcppkt ( dk_tcp_stream* cur_stream,
                           uint32_t cur_ts, uint8_t flags, uint8_t* payload, uint16_t payloadlen )
 {
 
-    uint16_t optlen = nty_calculate_option ( flags );
+    uint16_t optlen = dk_calculate_option ( flags );
 
-    nty_trace_tcp ( "payload:%d, mss:%d, optlen:%d, data:%s\n", payloadlen, cur_stream->snd->mss, optlen, payload );
+    dk_trace_tcp ( "payload:%d, mss:%d, optlen:%d, data:%s\n", payloadlen, cur_stream->snd->mss, optlen, payload );
     if ( payloadlen > cur_stream->snd->mss + optlen )
     {
-        nty_trace_tcp ( "Payload size exceeds MSS\n" );
+        dk_trace_tcp ( "Payload size exceeds MSS\n" );
         return -1;
     }
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     struct tcphdr* tcph = ( struct tcphdr* ) IPOutput ( tcp, cur_stream, TCP_HEADER_LEN+optlen+payloadlen );
     if ( tcph == NULL )
     {
@@ -600,7 +600,7 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
         tcph->syn = 1;
         if ( cur_stream->snd_nxt != cur_stream->snd->iss )
         {
-            nty_trace_tcp ( "Stream %d: weird SYN sequence. "
+            dk_trace_tcp ( "Stream %d: weird SYN sequence. "
                             "snd_nxt: %u, iss: %u\n", cur_stream->id,
                             cur_stream->snd_nxt, cur_stream->snd->iss );
         }
@@ -608,7 +608,7 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
 
     if ( flags & NTY_TCPHDR_RST )
     {
-        nty_trace_tcp ( "Stream %d: Sending RST.\n", cur_stream->id );
+        dk_trace_tcp ( "Stream %d: Sending RST.\n", cur_stream->id );
         tcph->rst = 1;
     }
 
@@ -620,7 +620,7 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
     if ( flags & NTY_TCPHDR_CWR )
     {
         tcph->seq = htonl ( cur_stream->snd_nxt - 1 );
-        nty_trace_tcp ( "%u Sending ACK to get new window advertisement. "
+        dk_trace_tcp ( "%u Sending ACK to get new window advertisement. "
                         "seq: %u, peer_wnd: %u, snd_nxt - snd_una: %u\n",
                         cur_stream->id,
                         cur_stream->snd_nxt - 1, cur_stream->snd->peer_wnd,
@@ -631,12 +631,12 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
         tcph->fin = 1;
         if ( cur_stream->snd->fss == 0 )
         {
-            nty_trace_tcp ( "Stream %u: not fss set. closed: %u\n",
+            dk_trace_tcp ( "Stream %u: not fss set. closed: %u\n",
                             cur_stream->id, cur_stream->closed );
         }
         tcph->seq = htonl ( cur_stream->snd->fss );
         cur_stream->snd->is_fin_sent = 1;
-        nty_trace_tcp ( "Stream %d: Sending FIN. seq: %u, ack_seq: %u\n",
+        dk_trace_tcp ( "Stream %d: Sending FIN. seq: %u, ack_seq: %u\n",
                         cur_stream->id, cur_stream->snd_nxt, cur_stream->rcv_nxt );
     }
     else
@@ -673,7 +673,7 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
         cur_stream->need_wnd_adv = 1;
     }
 
-    nty_tcp_generate_options ( cur_stream, cur_ts, flags,
+    dk_tcp_generate_options ( cur_stream, cur_ts, flags,
                                ( uint8_t* ) tcph+TCP_HEADER_LEN, optlen );
 
     tcph->doff = ( TCP_HEADER_LEN + optlen ) >> 2;
@@ -682,7 +682,7 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
         memcpy ( ( uint8_t* ) tcph + TCP_HEADER_LEN + optlen, payload, payloadlen );
     }
 
-    tcph->check = nty_tcp_calculate_checksum ( ( uint16_t* ) tcph,
+    tcph->check = dk_tcp_calculate_checksum ( ( uint16_t* ) tcph,
                                                TCP_HEADER_LEN + optlen + payloadlen,
                                                cur_stream->saddr, cur_stream->daddr );
     cur_stream->snd_nxt += payloadlen;
@@ -697,35 +697,35 @@ int nty_tcp_send_tcppkt ( nty_tcp_stream* cur_stream,
     {
         if ( cur_stream->state > NTY_TCP_ESTABLISHED )
         {
-            nty_trace_tcp ( "Payload after ESTABLISHED: length: %d, snd_nxt: %u\n",
+            dk_trace_tcp ( "Payload after ESTABLISHED: length: %d, snd_nxt: %u\n",
                             payloadlen, cur_stream->snd_nxt );
         }
 
         cur_stream->snd->ts_rto = cur_ts + cur_stream->snd->rto;
-        nty_trace_tcp ( "Updating retransmission timer. "
+        dk_trace_tcp ( "Updating retransmission timer. "
                         "cur_ts: %u, rto: %u, ts_rto: %u, mss:%d\n",
                         cur_ts, cur_stream->snd->rto, cur_stream->snd->ts_rto, cur_stream->snd->mss );
 
         AddtoRTOList ( tcp, cur_stream );
-        nty_trace_tcp ( " nty_tcp_send_tcppkt : %d\n", payloadlen );
+        dk_trace_tcp ( " dk_tcp_send_tcppkt : %d\n", payloadlen );
     }
 
     return payloadlen;
 }
 
 
-static inline int nty_tcp_filter_synpkt ( nty_tcp_manager* tcp, uint32_t ip, uint16_t port )
+static inline int dk_tcp_filter_synpkt ( dk_tcp_manager* tcp, uint32_t ip, uint16_t port )
 {
     struct sockaddr_in* addr;
 
-    nty_trace_tcp ( "FilterSYNPacket 111:0x%x, port:%d\n", ip, port );
-    struct _nty_tcp_listener* listener = ( struct _nty_tcp_listener* ) ListenerHTSearch ( tcp->listeners, &port );
+    dk_trace_tcp ( "FilterSYNPacket 111:0x%x, port:%d\n", ip, port );
+    struct _dk_tcp_listener* listener = ( struct _dk_tcp_listener* ) ListenerHTSearch ( tcp->listeners, &port );
     if ( listener == NULL )
     {
         return 0;
     }
 
-    nty_trace_tcp ( "FilterSYNPacket 222:0x%x, port:%d\n", ip, port );
+    dk_trace_tcp ( "FilterSYNPacket 222:0x%x, port:%d\n", ip, port );
     addr = &listener->s->s_addr;
     if ( addr->sin_port == port )
     {
@@ -746,15 +746,15 @@ static inline int nty_tcp_filter_synpkt ( nty_tcp_manager* tcp, uint32_t ip, uin
     return 0;
 }
 
-static inline nty_tcp_stream* nty_tcp_passive_open ( nty_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
+static inline dk_tcp_stream* dk_tcp_passive_open ( dk_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
                                                      const struct tcphdr* tcph, uint32_t seq, uint16_t window )
 {
 
-    nty_tcp_stream* cur_stream = CreateTcpStream ( tcp, NULL, NTY_TCP_SOCK_STREAM,
+    dk_tcp_stream* cur_stream = CreateTcpStream ( tcp, NULL, NTY_TCP_SOCK_STREAM,
                                                    iph->daddr, tcph->dest, iph->saddr, tcph->source );
     if ( cur_stream == NULL )
     {
-        nty_trace_tcp ( "INFO: Could not allocate tcp_stream!\n" );
+        dk_trace_tcp ( "INFO: Could not allocate tcp_stream!\n" );
         return NULL;
     }
 
@@ -773,14 +773,14 @@ static inline nty_tcp_stream* nty_tcp_passive_open ( nty_tcp_manager* tcp, uint3
     }
 #endif
 
-    nty_tcp_parse_options ( cur_stream, cur_ts, ( uint8_t* ) tcph+TCP_HEADER_LEN,
+    dk_tcp_parse_options ( cur_stream, cur_ts, ( uint8_t* ) tcph+TCP_HEADER_LEN,
                             ( tcph->doff << 2 ) - TCP_HEADER_LEN );
-    nty_trace_tcp ( "nty_tcp_passive_open : %d, %d\n", cur_stream->rcv_nxt, cur_stream->snd->mss );
+    dk_trace_tcp ( "dk_tcp_passive_open : %d, %d\n", cur_stream->rcv_nxt, cur_stream->snd->mss );
 
     return cur_stream;
 }
 
-int nty_tcp_active_open ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts,
+int dk_tcp_active_open ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts,
                           struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq, uint16_t window )
 {
 
@@ -791,7 +791,7 @@ int nty_tcp_active_open ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint
     cur_stream->rcv_nxt = cur_stream->rcv->irs + 1;
     cur_stream->rcv->last_ack_seq = ack_seq;
 
-    nty_tcp_parse_options ( cur_stream, cur_ts, ( uint8_t* ) tcph + TCP_HEADER_LEN,
+    dk_tcp_parse_options ( cur_stream, cur_ts, ( uint8_t* ) tcph + TCP_HEADER_LEN,
                             ( tcph->doff<<2 ) - TCP_HEADER_LEN );
 
     cur_stream->snd->cwnd = ( ( cur_stream->snd->cwnd == 1 ) ?
@@ -803,29 +803,29 @@ int nty_tcp_active_open ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint
     return 1;
 }
 
-static inline int nty_tcp_validseq ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts,
+static inline int dk_tcp_validseq ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts,
                                      struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq, int payloadlen )
 {
 
     if ( !tcph->rst && cur_stream->saw_timestamp )
     {
-        nty_tcp_timestamp ts;
-        if ( !nty_tcp_parse_timestamp ( &ts, ( uint8_t* ) tcph + TCP_HEADER_LEN,
+        dk_tcp_timestamp ts;
+        if ( !dk_tcp_parse_timestamp ( &ts, ( uint8_t* ) tcph + TCP_HEADER_LEN,
                                         ( tcph->doff << 2 ) - TCP_HEADER_LEN ) )
         {
-            nty_trace_tcp ( "No timestamp found\n" );
+            dk_trace_tcp ( "No timestamp found\n" );
             return 0;
         }
 
         if ( TCP_SEQ_LT ( ts.ts_val, cur_stream->rcv->ts_recent ) )
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
         }
         else
         {
             if ( TCP_SEQ_GT ( ts.ts_val, cur_stream->rcv->ts_recent ) )
             {
-                nty_trace_tcp ( "Timestamp update. cur: %u, prior: %u "
+                dk_trace_tcp ( "Timestamp update. cur: %u, prior: %u "
                                 "(time diff: %uus)\n",
                                 ts.ts_val, cur_stream->rcv->ts_recent,
                                 TS_TO_USEC ( cur_ts - cur_stream->rcv->ts_last_ts_upd ) );
@@ -847,61 +847,61 @@ static inline int nty_tcp_validseq ( nty_tcp_manager* tcp, nty_tcp_stream* cur_s
         {
             if ( seq + 1 == cur_stream->rcv_nxt )
             {
-                nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
+                dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
                 return 0;
             }
 
             if ( TCP_SEQ_LEQ ( seq, cur_stream->rcv_nxt ) )
             {
-                nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
+                dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
             }
             else
             {
-                nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+                dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
             }
         }
         else
         {
             if ( cur_stream->state == NTY_TCP_TIME_WAIT )
             {
-                nty_trace_tcp ( "Stream %d: tw expire update to %u\n",
+                dk_trace_tcp ( "Stream %d: tw expire update to %u\n",
                                 cur_stream->id, cur_stream->rcv->ts_tw_expire );
                 AddtoTimewaitList ( tcp, cur_stream, cur_ts );
             }
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
         return 0;
     }
     return 1;
 }
 
-static nty_tcp_stream* nty_create_stream ( nty_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
+static dk_tcp_stream* dk_create_stream ( dk_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
                                            int ip_len, const struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                                            int payloadlen, uint16_t window )
 {
 
-    nty_tcp_stream* cur_stream;
+    dk_tcp_stream* cur_stream;
     int ret = 0;
 
     if ( tcph->syn && !tcph->ack )
     {
-        nty_trace_tcp ( "ip:0x%x, port:%d\n", iph->daddr, tcph->dest );
-        ret = nty_tcp_filter_synpkt ( tcp, iph->daddr, tcph->dest );
+        dk_trace_tcp ( "ip:0x%x, port:%d\n", iph->daddr, tcph->dest );
+        ret = dk_tcp_filter_synpkt ( tcp, iph->daddr, tcph->dest );
         if ( !ret )
         {
-            nty_trace_tcp ( "Refusing SYN packet.\n" );
-            nty_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
+            dk_trace_tcp ( "Refusing SYN packet.\n" );
+            dk_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
                                0, seq + payloadlen + 1, 0, NTY_TCPHDR_RST | NTY_TCPHDR_ACK,
                                NULL, 0, cur_ts, 0 );
             return NULL;
         }
-        nty_trace_tcp ( "nty_create_stream\n" );
-        cur_stream = nty_tcp_passive_open ( tcp, cur_ts, iph, tcph, seq, window );
+        dk_trace_tcp ( "dk_create_stream\n" );
+        cur_stream = dk_tcp_passive_open ( tcp, cur_ts, iph, tcph, seq, window );
         if ( !cur_stream )
         {
-            nty_trace_tcp ( "Not available space in flow pool.\n" );
+            dk_trace_tcp ( "Not available space in flow pool.\n" );
 
-            nty_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
+            dk_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
                                0, seq + payloadlen + 1, 0, NTY_TCPHDR_RST | NTY_TCPHDR_ACK,
                                NULL, 0, cur_ts, 0 );
 
@@ -911,20 +911,20 @@ static nty_tcp_stream* nty_create_stream ( nty_tcp_manager* tcp, uint32_t cur_ts
     }
     else if ( tcph->rst )
     {
-        nty_trace_tcp ( "Reset packet comes\n" );
+        dk_trace_tcp ( "Reset packet comes\n" );
         return NULL;
     }
     else
     {
         if ( tcph->ack )
         {
-            nty_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
+            dk_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
                                ack_seq, 0, 0, NTY_TCPHDR_RST,
                                NULL, 0, cur_ts, 0 );
         }
         else
         {
-            nty_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
+            dk_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
                                0, seq + payloadlen, 0, NTY_TCPHDR_RST | NTY_TCPHDR_ACK,
                                NULL, 0, cur_ts, 0 );
         }
@@ -933,7 +933,7 @@ static nty_tcp_stream* nty_create_stream ( nty_tcp_manager* tcp, uint32_t cur_ts
 
 }
 
-static void nty_tcp_flush_accept_event ( nty_tcp_listener* listener )
+static void dk_tcp_flush_accept_event ( dk_tcp_listener* listener )
 {
 
     pthread_mutex_lock ( &listener->accept_lock );
@@ -946,7 +946,7 @@ static void nty_tcp_flush_accept_event ( nty_tcp_listener* listener )
     pthread_mutex_unlock ( &listener->accept_lock );
 }
 
-static void nty_tcp_flush_read_event ( nty_tcp_recv* rcv )
+static void dk_tcp_flush_read_event ( dk_tcp_recv* rcv )
 {
 
     pthread_mutex_lock ( &rcv->read_lock );
@@ -959,7 +959,7 @@ static void nty_tcp_flush_read_event ( nty_tcp_recv* rcv )
     pthread_mutex_unlock ( &rcv->read_lock );
 }
 
-static void nty_tcp_flush_send_event ( nty_tcp_send* snd )
+static void dk_tcp_flush_send_event ( dk_tcp_send* snd )
 {
 
     pthread_mutex_lock ( &snd->write_lock );
@@ -972,8 +972,8 @@ static void nty_tcp_flush_send_event ( nty_tcp_send* snd )
     pthread_mutex_unlock ( &snd->write_lock );
 }
 
-static void nty_tcp_handle_listen ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                    nty_tcp_stream* cur_stream, struct tcphdr* tcph )
+static void dk_tcp_handle_listen ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                    dk_tcp_stream* cur_stream, struct tcphdr* tcph )
 {
 
     if ( tcph->syn )
@@ -983,19 +983,19 @@ static void nty_tcp_handle_listen ( nty_tcp_manager* tcp, uint32_t cur_ts,
             cur_stream->rcv_nxt ++;
         }
         cur_stream->state = NTY_TCP_SYN_RCVD;
-        nty_trace_tcp ( "Stream %d: TCP_ST_SYN_RCVD\n", cur_stream->id );
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_trace_tcp ( "Stream %d: TCP_ST_SYN_RCVD\n", cur_stream->id );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
     }
     else
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_LISTEN): "
+        dk_trace_tcp ( "Stream %d (TCP_ST_LISTEN): "
                         "Packet without SYN.\n", cur_stream->id );
         assert ( 0 );
     }
 }
 
-static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                      nty_tcp_stream* cur_stream, const struct iphdr* iph, struct tcphdr* tcph,
+static void dk_tcp_handle_syn_sent ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                      dk_tcp_stream* cur_stream, const struct iphdr* iph, struct tcphdr* tcph,
                                       uint32_t seq, uint32_t ack_seq, int payloadlen, uint16_t window )
 {
 
@@ -1006,7 +1006,7 @@ static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
         {
             if ( !tcph->rst )
             {
-                nty_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
+                dk_tcppkt_alone ( tcp, iph->daddr, tcph->dest, iph->saddr, tcph->source,
                                    ack_seq, 0, 0, NTY_TCPHDR_RST, NULL, 0, cur_ts, 0 );
             }
             return ;
@@ -1031,7 +1031,7 @@ static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
 
     if ( tcph->syn && tcph->ack )
     {
-        int ret = nty_tcp_active_open ( tcp, cur_stream, cur_ts,
+        int ret = dk_tcp_active_open ( tcp, cur_stream, cur_ts,
                                         tcph, seq, ack_seq, window );
         if ( !ret )
         {
@@ -1043,7 +1043,7 @@ static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
         RemoveFromRTOList ( tcp, cur_stream );
         cur_stream->state = NTY_TCP_ESTABLISHED;
 
-        nty_trace_tcp ( "Stream %d: TCP_ST_ESTABLISHED\n", cur_stream->id );
+        dk_trace_tcp ( "Stream %d: TCP_ST_ESTABLISHED\n", cur_stream->id );
 
         if ( cur_stream->s )
         {
@@ -1051,13 +1051,13 @@ static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
         }
         else
         {
-            nty_tcppkt_alone ( tcp, iph->saddr, tcph->dest, iph->daddr, tcph->source,
+            dk_tcppkt_alone ( tcp, iph->saddr, tcph->dest, iph->daddr, tcph->source,
                                0, seq+payloadlen+1, 0, NTY_TCPHDR_RST | NTY_TCPHDR_ACK, NULL, 0, cur_ts, 0 );
             cur_stream->close_reason = TCP_ACTIVE_CLOSE;
             DestroyTcpStream ( tcp, cur_stream );
         }
 
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
         AddtoTimeoutList ( tcp, cur_stream );
     }
     else
@@ -1065,21 +1065,21 @@ static void nty_tcp_handle_syn_sent ( nty_tcp_manager* tcp, uint32_t cur_ts,
 
         cur_stream->state = NTY_TCP_SYN_RCVD;
         cur_stream->snd_nxt = cur_stream->snd->iss;
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
     }
 }
 
-static void nty_tcp_handle_syn_rcvd ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                      nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t ack_seq )
+static void dk_tcp_handle_syn_rcvd ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                      dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t ack_seq )
 {
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     if ( tcph->ack )
     {
         if ( ack_seq != snd->iss + 1 )
         {
-            nty_trace_tcp ( "Stream %d (TCP_ST_SYN_RCVD): "
+            dk_trace_tcp ( "Stream %d (TCP_ST_SYN_RCVD): "
                             "weird ack_seq: %u, iss: %u\n",
                             cur_stream->id, ack_seq, snd->iss );
             exit ( 1 );
@@ -1097,18 +1097,18 @@ static void nty_tcp_handle_syn_rcvd ( nty_tcp_manager* tcp, uint32_t cur_ts,
 
         cur_stream->state = NTY_TCP_ESTABLISHED;
 
-        struct _nty_tcp_listener* listener = ListenerHTSearch ( tcp->listeners, &tcph->dest );
+        struct _dk_tcp_listener* listener = ListenerHTSearch ( tcp->listeners, &tcph->dest );
         int ret = StreamEnqueue ( listener->acceptq, cur_stream );
         if ( ret < 0 )
         {
             cur_stream->close_reason = TCP_NOT_ACCEPTED;
             cur_stream->state = NTY_TCP_CLOSED;
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
         //
         AddtoTimeoutList ( tcp, cur_stream );
 
-        nty_trace_tcp ( "nty_tcp_handle_syn_rcvd\n" );
+        dk_trace_tcp ( "dk_tcp_handle_syn_rcvd\n" );
         if ( listener->s )
         {
             //&&
@@ -1124,12 +1124,12 @@ static void nty_tcp_handle_syn_rcvd ( nty_tcp_manager* tcp, uint32_t cur_ts,
 #else
             if ( listener->s->epoll & NTY_EPOLLIN )
             {
-                nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, listener->s, NTY_EPOLLIN );
+                dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, listener->s, NTY_EPOLLIN );
             }
 #endif
             if ( ! ( listener->s->opts & NTY_TCP_NONBLOCK ) )
             {
-                nty_tcp_flush_accept_event ( listener );
+                dk_tcp_flush_accept_event ( listener );
             }
 
         }
@@ -1137,41 +1137,41 @@ static void nty_tcp_handle_syn_rcvd ( nty_tcp_manager* tcp, uint32_t cur_ts,
     }
     else
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_SYN_RCVD): No ACK.\n",
+        dk_trace_tcp ( "Stream %d (TCP_ST_SYN_RCVD): No ACK.\n",
                         cur_stream->id );
 
         cur_stream->snd_nxt = snd->iss;
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
     }
 
 }
 
-void nty_tcp_handle_established ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                  nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
+void dk_tcp_handle_established ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                  dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                                   uint8_t* payload, int payloadlen, uint16_t window )
 {
 
     if ( tcph->syn )
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_ESTABLISHED): weird SYN. "
+        dk_trace_tcp ( "Stream %d (TCP_ST_ESTABLISHED): weird SYN. "
                         "seq: %u, expected: %u, ack_seq: %u, expected: %u\n",
                         cur_stream->id, seq, cur_stream->rcv_nxt,
                         ack_seq, cur_stream->snd_nxt );
 
         cur_stream->snd_nxt = ack_seq;
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
         return ;
     }
 
     if ( payloadlen > 0 )
     {
-        if ( nty_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
+        if ( dk_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
         }
         else
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
         }
     }
 
@@ -1179,7 +1179,7 @@ void nty_tcp_handle_established ( nty_tcp_manager* tcp, uint32_t cur_ts,
     {
         if ( cur_stream->snd->sndbuf )
         {
-            nty_tcp_process_ack ( tcp, cur_stream, cur_ts,
+            dk_tcp_process_ack ( tcp, cur_stream, cur_ts,
                                   tcph, seq, ack_seq, window, payloadlen );
         }
     }
@@ -1189,28 +1189,28 @@ void nty_tcp_handle_established ( nty_tcp_manager* tcp, uint32_t cur_ts,
         if ( seq + payloadlen == cur_stream->rcv_nxt )
         {
             cur_stream->state = NTY_TCP_CLOSE_WAIT;
-            nty_trace_tcp ( "Stream %d: TCP_ST_CLOSE_WAIT\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: TCP_ST_CLOSE_WAIT\n", cur_stream->id );
             cur_stream->rcv_nxt ++;
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
             //Raise Read Event
-            nty_trace_tcp ( "nty_tcp_flush_read_event\n" );
+            dk_trace_tcp ( "dk_tcp_flush_read_event\n" );
 
 #if NTY_ENABLE_EPOLL_RB
             if ( tcp->ep )
             {
                 epoll_event_callback ( tcp->ep, cur_stream->s->id, NTY_EPOLLIN );
             }
-            nty_trace_tcp ( " epoll_event_callback : %d\n", cur_stream->s->opts );
+            dk_trace_tcp ( " epoll_event_callback : %d\n", cur_stream->s->opts );
 #endif
             if ( cur_stream->s && ! ( cur_stream->s->opts & NTY_TCP_NONBLOCK ) )
             {
-                nty_tcp_flush_read_event ( cur_stream->rcv );
+                dk_tcp_flush_read_event ( cur_stream->rcv );
             }
 
         }
         else
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
             return ;
         }
     }
@@ -1218,34 +1218,34 @@ void nty_tcp_handle_established ( nty_tcp_manager* tcp, uint32_t cur_ts,
     return ;
 }
 
-void nty_tcp_handle_close_wait ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                 nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
+void dk_tcp_handle_close_wait ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                 dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                                  int payloadlen, uint16_t window )
 {
 
     if ( TCP_SEQ_LT ( seq, cur_stream->rcv_nxt ) )
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_CLOSE_WAIT): "
+        dk_trace_tcp ( "Stream %d (TCP_ST_CLOSE_WAIT): "
                         "weird seq: %u, expected: %u\n",
                         cur_stream->id, seq, cur_stream->rcv_nxt );
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
         return ;
     }
     if ( cur_stream->snd->sndbuf )
     {
-        nty_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq,
+        dk_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq,
                               ack_seq, window, payloadlen );
     }
 }
 
-void nty_tcp_handle_last_ack ( nty_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
-                               int ip_len, nty_tcp_stream* cur_stream, struct tcphdr* tcph,
+void dk_tcp_handle_last_ack ( dk_tcp_manager* tcp, uint32_t cur_ts, const struct iphdr* iph,
+                               int ip_len, dk_tcp_stream* cur_stream, struct tcphdr* tcph,
                                uint32_t seq, uint32_t ack_seq, int payloadlen, uint16_t window )
 {
 
     if ( TCP_SEQ_LT ( seq, cur_stream->rcv_nxt ) )
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
+        dk_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
                         "weird seq: %u, expected: %u\n",
                         cur_stream->id, seq, cur_stream->rcv_nxt );
         return;
@@ -1254,12 +1254,12 @@ void nty_tcp_handle_last_ack ( nty_tcp_manager* tcp, uint32_t cur_ts, const stru
     {
         if ( cur_stream->snd->sndbuf )
         {
-            nty_tcp_process_ack ( tcp, cur_stream, cur_ts,
+            dk_tcp_process_ack ( tcp, cur_stream, cur_ts,
                                   tcph, seq, ack_seq, window, payloadlen );
         }
         if ( !cur_stream->snd->is_fin_sent )
         {
-            nty_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
+            dk_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
                             "No FIN sent yet.\n", cur_stream->id );
             return ;
         }
@@ -1271,35 +1271,35 @@ void nty_tcp_handle_last_ack ( nty_tcp_manager* tcp, uint32_t cur_ts, const stru
             cur_stream->state = NTY_TCP_CLOSED;
             cur_stream->close_reason = TCP_PASSIVE_CLOSE;
 
-            nty_trace_tcp ( "Stream %d: NTY_TCP_CLOSED\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: NTY_TCP_CLOSED\n", cur_stream->id );
             DestroyTcpStream ( tcp, cur_stream );
         }
         else
         {
-            nty_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): Not ACK of FIN. "
+            dk_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): Not ACK of FIN. "
                             "ack_seq: %u, expected: %u\n",
                             cur_stream->id, ack_seq, cur_stream->snd->fss + 1 );
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
     }
     else
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): No ACK\n",
+        dk_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): No ACK\n",
                         cur_stream->id );
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
     }
 }
 
-void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                 nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
+void dk_tcp_handle_fin_wait_1 ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                 dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                                  uint8_t* payload, int payloadlen, uint16_t window )
 {
     if ( TCP_SEQ_LT ( seq, cur_stream->rcv_nxt ) )
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
+        dk_trace_tcp ( "Stream %d (TCP_ST_LAST_ACK): "
                         "weird seq: %u, expected: %u\n",
                         cur_stream->id, seq, cur_stream->rcv_nxt );
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
         return ;
     }
 
@@ -1307,7 +1307,7 @@ void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
     {
         if ( cur_stream->snd->sndbuf )
         {
-            nty_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq, ack_seq, window, payloadlen );
+            dk_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq, ack_seq, window, payloadlen );
         }
         if ( cur_stream->snd->is_fin_sent &&
                 ack_seq == cur_stream->snd->fss + 1 )
@@ -1315,7 +1315,7 @@ void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
             cur_stream->snd->snd_una = ack_seq;
             if ( TCP_SEQ_GT ( ack_seq, cur_stream->snd_nxt ) )
             {
-                nty_trace_tcp ( "Stream %d: update snd_nxt to %u\n",
+                dk_trace_tcp ( "Stream %d: update snd_nxt to %u\n",
                                 cur_stream->id, ack_seq );
                 cur_stream->snd_nxt = ack_seq;
             }
@@ -1323,26 +1323,26 @@ void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
             RemoveFromRTOList ( tcp, cur_stream );
             cur_stream->state = NTY_TCP_FIN_WAIT_2;
 
-            nty_trace_tcp ( "Stream %d: TCP_ST_FIN_WAIT_2\n",
+            dk_trace_tcp ( "Stream %d: TCP_ST_FIN_WAIT_2\n",
                             cur_stream->id );
         }
     }
     else
     {
-        nty_trace_tcp ( "Stream %d: does not contain an ack!\n",
+        dk_trace_tcp ( "Stream %d: does not contain an ack!\n",
                         cur_stream->id );
         return;
     }
 
     if ( payloadlen > 0 )
     {
-        if ( nty_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
+        if ( dk_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
         }
         else
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
         }
     }
 
@@ -1354,14 +1354,14 @@ void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
             if ( cur_stream->state == NTY_TCP_FIN_WAIT_1 )
             {
                 cur_stream->state = NTY_TCP_CLOSING;
-                nty_trace_tcp ( "Stream %d: TCP_ST_CLOSING\n", cur_stream->id );
+                dk_trace_tcp ( "Stream %d: TCP_ST_CLOSING\n", cur_stream->id );
 
             }
             else if ( cur_stream->state == NTY_TCP_FIN_WAIT_2 )
             {
 
                 cur_stream->state = NTY_TCP_TIMEWAIT;
-                nty_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
+                dk_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
                 AddtoTimewaitList ( tcp, cur_stream, cur_ts );
 
             }
@@ -1369,13 +1369,13 @@ void nty_tcp_handle_fin_wait_1 ( nty_tcp_manager* tcp, uint32_t cur_ts,
             {
                 assert ( 0 );
             }
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
     }
 }
 
-void nty_tcp_handle_fin_wait_2 ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                                 nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
+void dk_tcp_handle_fin_wait_2 ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                                 dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                                  uint8_t* payload, int payloadlen, uint16_t window )
 {
 
@@ -1383,25 +1383,25 @@ void nty_tcp_handle_fin_wait_2 ( nty_tcp_manager* tcp, uint32_t cur_ts,
     {
         if ( cur_stream->snd->sndbuf )
         {
-            nty_tcp_process_ack ( tcp, cur_stream, cur_ts,
+            dk_tcp_process_ack ( tcp, cur_stream, cur_ts,
                                   tcph, seq, ack_seq, window, payloadlen );
         }
     }
     else
     {
-        nty_trace_tcp ( "Stream %d: does not contain an ack!\n",
+        dk_trace_tcp ( "Stream %d: does not contain an ack!\n",
                         cur_stream->id );
         return;
     }
     if ( payloadlen > 0 )
     {
-        if ( nty_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
+        if ( dk_tcp_process_payload ( tcp, cur_stream, cur_ts, payload, seq, payloadlen ) )
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_AGGREGATE );
         }
         else
         {
-            nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
+            dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_NOW );
         }
     }
     if ( tcph->fin )
@@ -1410,16 +1410,16 @@ void nty_tcp_handle_fin_wait_2 ( nty_tcp_manager* tcp, uint32_t cur_ts,
         {
             cur_stream->state = NTY_TCP_TIME_WAIT;
             cur_stream->rcv_nxt ++;
-            nty_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
 
             AddtoTimewaitList ( tcp, cur_stream, cur_ts );
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
     }
 }
 
-void nty_tcp_handle_closing ( nty_tcp_manager* tcp, uint32_t cur_ts,
-                              nty_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
+void dk_tcp_handle_closing ( dk_tcp_manager* tcp, uint32_t cur_ts,
+                              dk_tcp_stream* cur_stream, struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq,
                               int payloadlen, uint16_t window )
 {
 
@@ -1427,11 +1427,11 @@ void nty_tcp_handle_closing ( nty_tcp_manager* tcp, uint32_t cur_ts,
     {
         if ( cur_stream->snd->sndbuf )
         {
-            nty_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq, ack_seq, window, payloadlen );
+            dk_tcp_process_ack ( tcp, cur_stream, cur_ts, tcph, seq, ack_seq, window, payloadlen );
         }
         if ( !cur_stream->snd->is_fin_sent )
         {
-            nty_trace_tcp ( "Stream %d (TCP_ST_CLOSING): "
+            dk_trace_tcp ( "Stream %d (TCP_ST_CLOSING): "
                             "No FIN sent yet.\n", cur_stream->id );
             return;
         }
@@ -1444,26 +1444,26 @@ void nty_tcp_handle_closing ( nty_tcp_manager* tcp, uint32_t cur_ts,
         UpdateRetransmissionTimer ( tcp, cur_stream, cur_ts );
 
         cur_stream->state = NTY_TCP_TIME_WAIT;
-        nty_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
+        dk_trace_tcp ( "Stream %d: TCP_ST_TIME_WAIT\n", cur_stream->id );
 
         AddtoTimewaitList ( tcp, cur_stream, cur_ts );
     }
     else
     {
-        nty_trace_tcp ( "Stream %d (TCP_ST_CLOSING): Not ACK\n",
+        dk_trace_tcp ( "Stream %d (TCP_ST_CLOSING): Not ACK\n",
                         cur_stream->id );
         return;
     }
 
 }
 
-void nty_tcp_estimate_rtt ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t mrtt )
+void dk_tcp_estimate_rtt ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t mrtt )
 {
 
 #define TCP_RTO_MIN     0
     long m = mrtt;
     uint32_t tcp_rto_min = TCP_RTO_MIN;
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
 
     if ( m == 0 )
     {
@@ -1514,18 +1514,18 @@ void nty_tcp_estimate_rtt ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, ui
         rcv->rtt_seq = cur_stream->snd_nxt;
     }
 
-    nty_trace_tcp ( "mrtt: %u (%uus), srtt: %u (%ums), mdev: %u, mdev_max: %u, "
+    dk_trace_tcp ( "mrtt: %u (%uus), srtt: %u (%ums), mdev: %u, mdev_max: %u, "
                     "rttvar: %u, rtt_seq: %u\n", mrtt, mrtt * TIME_TICK,
                     rcv->srtt, TS_TO_MSEC ( ( rcv->srtt ) >> 3 ), rcv->mdev,
                     rcv->mdev_max, rcv->rttvar, rcv->rtt_seq );
 
 }
 
-static int nty_tcp_process_payload ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream,
+static int dk_tcp_process_payload ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream,
                                      uint32_t cur_ts, uint8_t* payload, uint32_t seq, int payloadlen )
 {
 
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
 
     if ( TCP_SEQ_LT ( seq+payloadlen, cur_stream->rcv_nxt ) )
     {
@@ -1539,14 +1539,14 @@ static int nty_tcp_process_payload ( nty_tcp_manager* tcp, nty_tcp_stream* cur_s
 
     if ( !rcv->recvbuf )
     {
-        nty_trace_tcp ( "nty_tcp_process_payload --> \n" );
+        dk_trace_tcp ( "dk_tcp_process_payload --> \n" );
         rcv->recvbuf = RBInit ( tcp->rbm_rcv, rcv->irs + 1 );
         if ( !rcv->recvbuf )
         {
             cur_stream->state = NTY_TCP_CLOSED;
             cur_stream->close_reason = TCP_NO_MEM;
             //Raise Error Event
-            nty_trace_tcp ( " Raise Error Event \n" );
+            dk_trace_tcp ( " Raise Error Event \n" );
 
             return -1;
         }
@@ -1575,7 +1575,7 @@ static int nty_tcp_process_payload ( nty_tcp_manager* tcp, nty_tcp_stream* cur_s
     int ret = RBPut ( tcp->rbm_rcv, rcv->recvbuf, payload, ( uint32_t ) payloadlen, seq );
     if ( ret < 0 )
     {
-        nty_trace_tcp ( "Cannot merge payload. reason: %d\n", ret );
+        dk_trace_tcp ( "Cannot merge payload. reason: %d\n", ret );
     }
 
     if ( cur_stream->state == NTY_TCP_FIN_WAIT_1 ||
@@ -1612,20 +1612,20 @@ static int nty_tcp_process_payload ( nty_tcp_manager* tcp, nty_tcp_stream* cur_s
             }
 
 #else
-            nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, cur_stream->s, NTY_EPOLLIN );
+            dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, cur_stream->s, NTY_EPOLLIN );
 #endif
             if ( ! ( cur_stream->s->opts & NTY_TCP_NONBLOCK ) )
             {
-                nty_tcp_flush_read_event ( rcv );
+                dk_tcp_flush_read_event ( rcv );
             }
         }
     }
     return 1;
 }
 
-static int nty_tcp_process_rst ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t ack_seq )
+static int dk_tcp_process_rst ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t ack_seq )
 {
-    nty_trace_tcp ( "Stream %d: TCP RESET (%d)\n",
+    dk_trace_tcp ( "Stream %d: TCP RESET (%d)\n",
                     cur_stream->id, cur_stream->state );
 
     if ( cur_stream->state <= NTY_TCP_SYN_SENT )
@@ -1660,7 +1660,7 @@ static int nty_tcp_process_rst ( nty_tcp_manager* tcp, nty_tcp_stream* cur_strea
     if ( cur_stream->state >= NTY_TCP_ESTABLISHED &&
             cur_stream->state <= NTY_TCP_CLOSE_WAIT )
     {
-        nty_trace_tcp ( "Stream %d: Notifying connection reset.\n", cur_stream->id );
+        dk_trace_tcp ( "Stream %d: Notifying connection reset.\n", cur_stream->id );
     }
 
     if ( ! ( cur_stream->snd->on_closeq ||
@@ -1676,11 +1676,11 @@ static int nty_tcp_process_rst ( nty_tcp_manager* tcp, nty_tcp_stream* cur_strea
     return 1;
 }
 
-static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts,
+static void dk_tcp_process_ack ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts,
                                   struct tcphdr* tcph, uint32_t seq, uint32_t ack_seq, uint16_t window, int payloadlen )
 {
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     uint32_t cwindow = window;
 
@@ -1706,7 +1706,7 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
     if ( TCP_SEQ_GT ( ack_seq,snd->sndbuf->head_seq + snd->sndbuf->len ) )
     {
         //char *state_str = TCPStateToString(cur_stream);
-        nty_trace_tcp ( "Stream %d (%d): invalid acknologement. ack_seq: %u, possible max_ack_seq: %u\n",
+        dk_trace_tcp ( "Stream %d (%d): invalid acknologement. ack_seq: %u, possible max_ack_seq: %u\n",
                         cur_stream->id, cur_stream->state, ack_seq,
                         snd->sndbuf->head_seq + snd->sndbuf->len );
 
@@ -1728,13 +1728,13 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
         if ( cwindow_prev < cur_stream->snd_nxt - snd->snd_una &&
                 snd->peer_wnd >= cur_stream->snd_nxt - snd->snd_una )
         {
-            nty_trace_tcp ( "%u Broadcasting client window update! "
+            dk_trace_tcp ( "%u Broadcasting client window update! "
                             "ack_seq: %u, peer_wnd: %u (before: %u), "
                             "(snd_nxt - snd_una: %u)\n",
                             cur_stream->id, ack_seq, snd->peer_wnd, cwindow_prev,
                             cur_stream->snd_nxt - snd->snd_una );
             //RaiseWriteEvent(mtcp, cur_stream);
-            nty_tcp_flush_send_event ( snd );
+            dk_tcp_flush_send_event ( snd );
         }
     }
 
@@ -1762,15 +1762,15 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
 
     if ( dup && cur_stream->rcv->dup_acks == 3 )
     {
-        nty_trace_tcp ( "Triple duplicated ACKs!! ack_seq: %u\n", ack_seq );
+        dk_trace_tcp ( "Triple duplicated ACKs!! ack_seq: %u\n", ack_seq );
         if ( TCP_SEQ_LT ( ack_seq, cur_stream->snd_nxt ) )
         {
-            nty_trace_tcp ( "Reducing snd_nxt from %u to %u\n",
+            dk_trace_tcp ( "Reducing snd_nxt from %u to %u\n",
                             cur_stream->snd_nxt, ack_seq );
 
             if ( ack_seq != snd->snd_una )
             {
-                nty_trace_tcp ( "ack_seq and snd_una mismatch on tdp ack. "
+                dk_trace_tcp ( "ack_seq and snd_una mismatch on tdp ack. "
                                 "ack_seq: %u, snd_una: %u\n",
                                 ack_seq, snd->snd_una );
             }
@@ -1783,7 +1783,7 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
             snd->ssthresh = 2 * snd->mss;
         }
         snd->cwnd = snd->ssthresh + 3 * snd->mss;
-        nty_trace_tcp ( "Fast retransmission. cwnd: %u, ssthresh: %u\n",
+        dk_trace_tcp ( "Fast retransmission. cwnd: %u, ssthresh: %u\n",
                         snd->cwnd, snd->ssthresh );
 
         if ( snd->nrtx < TCP_MAX_RTX )
@@ -1792,9 +1792,9 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
         }
         else
         {
-            nty_trace_tcp ( "Exceed MAX_RTX. \n" );
+            dk_trace_tcp ( "Exceed MAX_RTX. \n" );
         }
-        nty_tcp_addto_sendlist ( tcp, cur_stream );
+        dk_tcp_addto_sendlist ( tcp, cur_stream );
     }
     else if ( cur_stream->rcv->dup_acks > 3 )
     {
@@ -1802,19 +1802,19 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
         if ( ( uint32_t ) ( snd->cwnd + snd->mss ) > snd->cwnd )
         {
             snd->cwnd += snd->mss;
-            nty_trace_tcp ( "Dupack cwnd inflate. cwnd: %u, ssthresh: %u\n",
+            dk_trace_tcp ( "Dupack cwnd inflate. cwnd: %u, ssthresh: %u\n",
                             snd->cwnd, snd->ssthresh );
         }
     }
 
     if ( TCP_SEQ_GT ( ack_seq, cur_stream->snd_nxt ) )
     {
-        nty_trace_tcp ( "Updating snd_nxt from %u to %u\n",
+        dk_trace_tcp ( "Updating snd_nxt from %u to %u\n",
                         cur_stream->snd_nxt, ack_seq );
         cur_stream->snd_nxt = ack_seq;
         if ( snd->sndbuf->len == 0 )
         {
-            nty_tcp_remove_sendlist ( tcp, cur_stream );
+            dk_tcp_remove_sendlist ( tcp, cur_stream );
         }
     }
 
@@ -1833,13 +1833,13 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
         }
         if ( cur_stream->saw_timestamp )
         {
-            nty_tcp_estimate_rtt ( tcp, cur_stream, cur_ts-cur_stream->rcv->ts_lastack_rcvd );
+            dk_tcp_estimate_rtt ( tcp, cur_stream, cur_ts-cur_stream->rcv->ts_lastack_rcvd );
             snd->rto = ( cur_stream->rcv->srtt >> 3 ) + cur_stream->rcv->rttvar;
             assert ( snd->rto > 0 );
         }
         else
         {
-            nty_trace_tcp ( "not implemented.\n" );
+            dk_trace_tcp ( "not implemented.\n" );
         }
 
         if ( cur_stream->state >= NTY_TCP_ESTABLISHED )
@@ -1850,7 +1850,7 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
                 {
                     snd->cwnd += snd->mss * packets;
                 }
-                nty_trace_tcp ( "slow start cwnd : %u, ssthresh: %u\n",
+                dk_trace_tcp ( "slow start cwnd : %u, ssthresh: %u\n",
                                 snd->cwnd, snd->ssthresh );
             }
         }
@@ -1883,7 +1883,7 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
         if ( snd_wnd_prev <= 0 )
         {
             //Raise Write Event
-            nty_tcp_flush_send_event ( snd );
+            dk_tcp_flush_send_event ( snd );
         }
 
         pthread_mutex_unlock ( &snd->write_lock );
@@ -1893,7 +1893,7 @@ static void nty_tcp_process_ack ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stre
 }
 
 
-int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
+int dk_tcp_process ( dk_nic_context* ctx, unsigned char* stream )
 {
 
     struct iphdr* iph = ( struct iphdr* ) ( stream + sizeof ( struct ethhdr ) );
@@ -1907,14 +1907,14 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     int payloadlen = tcp_len - ( tcph->doff << 2 );
 
     //unsigned short check = in_cksum((unsigned short*)tcph, tcp_len);
-    unsigned short check = nty_tcp_calculate_checksum ( ( uint16_t* ) tcph, tcp_len, iph->saddr, iph->daddr );
-    nty_trace_tcp ( "check : %x, orgin : %x, payloadlen:%d\n", check, tcph->check, payloadlen );
+    unsigned short check = dk_tcp_calculate_checksum ( ( uint16_t* ) tcph, tcp_len, iph->saddr, iph->daddr );
+    dk_trace_tcp ( "check : %x, orgin : %x, payloadlen:%d\n", check, tcph->check, payloadlen );
     if ( check )
     {
         return -1;
     }
 
-    nty_tcp_stream tstream = {0};
+    dk_tcp_stream tstream = {0};
 #if 1
     tstream.saddr = iph->daddr;
     tstream.sport = tcph->dest;
@@ -1936,14 +1936,14 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     uint16_t window = ntohs ( tcph->window );
 
 
-    nty_trace_tcp ( "saddr:0x%x,sport:%d,daddr:0x%x,dport:%d, seq:%d, ack_seq:%d\n",
+    dk_trace_tcp ( "saddr:0x%x,sport:%d,daddr:0x%x,dport:%d, seq:%d, ack_seq:%d\n",
                     iph->daddr, ntohs ( tcph->dest ), iph->saddr, ntohs ( tcph->source ),
                     seq, ack_seq );
 
-    nty_tcp_stream* cur_stream = ( nty_tcp_stream* ) StreamHTSearch ( nty_tcp->tcp_flow_table, &tstream );
+    dk_tcp_stream* cur_stream = ( dk_tcp_stream* ) StreamHTSearch ( dk_tcp->tcp_flow_table, &tstream );
     if ( cur_stream == NULL )
     {
-        cur_stream = nty_create_stream ( nty_tcp, ts, iph, ip_len, tcph, seq, ack_seq, payloadlen, window );
+        cur_stream = dk_create_stream ( dk_tcp, ts, iph, ip_len, tcph, seq, ack_seq, payloadlen, window );
         if ( !cur_stream )
         {
             return -2;
@@ -1952,16 +1952,16 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     int ret = 0;
     if ( cur_stream->state > NTY_TCP_SYN_RCVD )
     {
-        ret = nty_tcp_validseq ( nty_tcp, cur_stream, ts, tcph, seq, ack_seq, payloadlen );
+        ret = dk_tcp_validseq ( dk_tcp, cur_stream, ts, tcph, seq, ack_seq, payloadlen );
         if ( !ret )
         {
-            nty_trace_tcp ( "Stream %d: Unexpected sequence: %u, expected: %u\n",
+            dk_trace_tcp ( "Stream %d: Unexpected sequence: %u, expected: %u\n",
                             cur_stream->id, seq, cur_stream->rcv_nxt );
             return 1;
         }
     }
 
-    nty_trace_tcp ( "nty_tcp_process state : %d\n", cur_stream->state );
+    dk_trace_tcp ( "dk_tcp_process state : %d\n", cur_stream->state );
 
     if ( tcph->syn )
     {
@@ -1973,14 +1973,14 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     }
 
     cur_stream->last_active_ts = ts;
-    UpdateTimeoutList ( nty_tcp, cur_stream );
+    UpdateTimeoutList ( dk_tcp, cur_stream );
 
     if ( tcph->rst )
     {
         cur_stream->have_reset = 1;
         if ( cur_stream->state > NTY_TCP_SYN_SENT )
         {
-            if ( nty_tcp_process_rst ( nty_tcp, cur_stream, ack_seq ) )
+            if ( dk_tcp_process_rst ( dk_tcp, cur_stream, ack_seq ) )
             {
                 return 1;
             }
@@ -1991,12 +1991,12 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     {
         case NTY_TCP_LISTEN:
         {
-            nty_tcp_handle_listen ( nty_tcp, ts, cur_stream, tcph );
+            dk_tcp_handle_listen ( dk_tcp, ts, cur_stream, tcph );
             break;
         }
         case NTY_TCP_SYN_SENT:
         {
-            nty_tcp_handle_syn_sent ( nty_tcp, ts, cur_stream, iph, tcph, seq,
+            dk_tcp_handle_syn_sent ( dk_tcp, ts, cur_stream, iph, tcph, seq,
                                       ack_seq, payloadlen, window );
             break;
         }
@@ -2004,14 +2004,14 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
         {
             if ( tcph->syn && seq == cur_stream->rcv->irs )
             {
-                nty_tcp_handle_listen ( nty_tcp, ts, cur_stream, tcph );
+                dk_tcp_handle_listen ( dk_tcp, ts, cur_stream, tcph );
             }
             else
             {
-                nty_tcp_handle_syn_rcvd ( nty_tcp, ts, cur_stream, tcph, ack_seq );
+                dk_tcp_handle_syn_rcvd ( dk_tcp, ts, cur_stream, tcph, ack_seq );
                 if ( payloadlen > 0 && cur_stream->state == NTY_TCP_ESTABLISHED )
                 {
-                    nty_tcp_handle_established ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+                    dk_tcp_handle_established ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                                  payload, payloadlen, window );
                 }
             }
@@ -2019,37 +2019,37 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
         }
         case NTY_TCP_ESTABLISHED:
         {
-            nty_tcp_handle_established ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+            dk_tcp_handle_established ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                          payload, payloadlen, window );
             break;
         }
         case NTY_TCP_CLOSE_WAIT:
         {
-            nty_tcp_handle_close_wait ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+            dk_tcp_handle_close_wait ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                         payloadlen, window );
             break;
         }
         case NTY_TCP_LAST_ACK:
         {
-            nty_tcp_handle_last_ack ( nty_tcp, ts, iph, ip_len, cur_stream, tcph,
+            dk_tcp_handle_last_ack ( dk_tcp, ts, iph, ip_len, cur_stream, tcph,
                                       seq, ack_seq, payloadlen, window );
             break;
         }
         case NTY_TCP_FIN_WAIT_1:
         {
-            nty_tcp_handle_fin_wait_1 ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+            dk_tcp_handle_fin_wait_1 ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                         payload, payloadlen, window );
             break;
         }
         case NTY_TCP_FIN_WAIT_2:
         {
-            nty_tcp_handle_fin_wait_2 ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+            dk_tcp_handle_fin_wait_2 ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                         payload, payloadlen, window );
             break;
         }
         case NTY_TCP_CLOSING:
         {
-            nty_tcp_handle_closing ( nty_tcp, ts, cur_stream, tcph, seq, ack_seq,
+            dk_tcp_handle_closing ( dk_tcp, ts, cur_stream, tcph, seq, ack_seq,
                                      payloadlen, window );
             break;
         }
@@ -2057,10 +2057,10 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
         {
             if ( cur_stream->on_timewait_list )
             {
-                RemoveFromTimewaitList ( nty_tcp, cur_stream );
-                AddtoTimewaitList ( nty_tcp, cur_stream, ts );
+                RemoveFromTimewaitList ( dk_tcp, cur_stream );
+                AddtoTimewaitList ( dk_tcp, cur_stream, ts );
             }
-            nty_tcp_addto_controllist ( nty_tcp, cur_stream );
+            dk_tcp_addto_controllist ( dk_tcp, cur_stream );
             break;
         }
         case NTY_TCP_CLOSED:
@@ -2072,9 +2072,9 @@ int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream )
     return 1;
 }
 
-nty_sender* nty_tcp_create_sender ( int ifidx )
+dk_sender* dk_tcp_create_sender ( int ifidx )
 {
-    nty_sender* sender = ( nty_sender* ) calloc ( 1, sizeof ( nty_sender ) );
+    dk_sender* sender = ( dk_sender* ) calloc ( 1, sizeof ( dk_sender ) );
     if ( !sender )
     {
         return NULL;
@@ -2091,15 +2091,15 @@ nty_sender* nty_tcp_create_sender ( int ifidx )
     return sender;
 }
 
-void nty_tcp_destroy_sender ( nty_sender* sender )
+void dk_tcp_destroy_sender ( dk_sender* sender )
 {
     free ( sender );
 }
 
-int nty_tcp_init_manager ( nty_thread_context* ctx )
+int dk_tcp_init_manager ( dk_thread_context* ctx )
 {
 
-    nty_tcp_manager* tcp = ( nty_tcp_manager* ) calloc ( 1, sizeof ( nty_tcp_manager ) );
+    dk_tcp_manager* tcp = ( dk_tcp_manager* ) calloc ( 1, sizeof ( dk_tcp_manager ) );
     if ( !tcp )
     {
         perror ( "malloc" );
@@ -2108,13 +2108,13 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
     tcp->tcp_flow_table = CreateHashtable ( HashFlow, EqualFlow, NUM_BINS_FLOWS );
     if ( !tcp->tcp_flow_table )
     {
-        nty_trace_tcp ( "[%s:%s:%d] --> create hash table\n", __FILE__, __func__, __LINE__ );
+        dk_trace_tcp ( "[%s:%s:%d] --> create hash table\n", __FILE__, __func__, __LINE__ );
         return -2;
     }
     tcp->listeners = CreateHashtable ( HashListener, EqualListener, NUM_BINS_LISTENERS );
     if ( !tcp->listeners )
     {
-        nty_trace_tcp ( "[%s:%s:%d] --> create hash table\n", __FILE__, __func__, __LINE__ );
+        dk_trace_tcp ( "[%s:%s:%d] --> create hash table\n", __FILE__, __func__, __LINE__ );
         return -2;
     }
 #ifdef HUGEPAGE
@@ -2122,34 +2122,34 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
 #else
 #define IS_HUGEPAGE     0
 #endif
-    tcp->flow = nty_mempool_create ( sizeof ( nty_tcp_stream ), sizeof ( nty_tcp_stream ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
+    tcp->flow = dk_mempool_create ( sizeof ( dk_tcp_stream ), sizeof ( dk_tcp_stream ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
     if ( !tcp->flow )
     {
-        nty_trace_tcp ( "Failed to allocate tcp flow pool.\n" );
+        dk_trace_tcp ( "Failed to allocate tcp flow pool.\n" );
         return -3;
     }
-    tcp->rcv = nty_mempool_create ( sizeof ( nty_tcp_recv ), sizeof ( nty_tcp_recv ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
+    tcp->rcv = dk_mempool_create ( sizeof ( dk_tcp_recv ), sizeof ( dk_tcp_recv ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
     if ( !tcp->rcv )
     {
-        nty_trace_tcp ( "Failed to allocate tcp recv pool.\n" );
+        dk_trace_tcp ( "Failed to allocate tcp recv pool.\n" );
         return -3;
     }
-    tcp->snd = nty_mempool_create ( sizeof ( nty_tcp_send ), sizeof ( nty_tcp_send ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
+    tcp->snd = dk_mempool_create ( sizeof ( dk_tcp_send ), sizeof ( dk_tcp_send ) * NTY_MAX_CONCURRENCY, IS_HUGEPAGE );
     if ( !tcp->snd )
     {
-        nty_trace_tcp ( "Failed to allocate tcp recv pool.\n" );
+        dk_trace_tcp ( "Failed to allocate tcp recv pool.\n" );
         return -3;
     }
-    tcp->rbm_snd = nty_sbmanager_create ( NTY_SNDBUF_SIZE, NTY_MAX_NUM_BUFFERS );
+    tcp->rbm_snd = dk_sbmanager_create ( NTY_SNDBUF_SIZE, NTY_MAX_NUM_BUFFERS );
     if ( !tcp->rbm_snd )
     {
-        nty_trace_tcp ( "Failed to create send ring buffer.\n" );
+        dk_trace_tcp ( "Failed to create send ring buffer.\n" );
         return -4;
     }
     tcp->rbm_rcv = RBManagerCreate ( NTY_RCVBUF_SIZE, NTY_MAX_NUM_BUFFERS );
     if ( !tcp->rbm_rcv )
     {
-        nty_trace_tcp ( "Failed to create recv ring buffer.\n" );
+        dk_trace_tcp ( "Failed to create recv ring buffer.\n" );
         return -4;
     }
 
@@ -2157,19 +2157,19 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
 
 #if NTY_ENABLE_SOCKET_C10M
 
-    tcp->fdtable = nty_socket_init_fdtable();
+    tcp->fdtable = dk_socket_init_fdtable();
     if ( !tcp->fdtable )
     {
-        nty_trace_tcp ( "Failed to create fdtable.\n" );
+        dk_trace_tcp ( "Failed to create fdtable.\n" );
         return -4;
     }
 
 #endif
 
-    tcp->smap = ( nty_socket_map* ) calloc ( NTY_MAX_CONCURRENCY, sizeof ( nty_socket_map ) );
+    tcp->smap = ( dk_socket_map* ) calloc ( NTY_MAX_CONCURRENCY, sizeof ( dk_socket_map ) );
     if ( !tcp->smap )
     {
-        nty_trace_tcp ( "Failed to allocate memory for stream map.\n" );
+        dk_trace_tcp ( "Failed to allocate memory for stream map.\n" );
         return -5;
     }
     TAILQ_INIT ( &tcp->free_smap );
@@ -2189,65 +2189,65 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
     tcp->connectq = CreateStreamQueue ( NTY_BACKLOG_SIZE );
     if ( !tcp->connectq )
     {
-        nty_trace_tcp ( "Failed to create connect queue.\n" );
+        dk_trace_tcp ( "Failed to create connect queue.\n" );
         return -6;
     }
 
     tcp->sendq = CreateStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->sendq )
     {
-        nty_trace_tcp ( "Failed to create send queue.\n" );
+        dk_trace_tcp ( "Failed to create send queue.\n" );
         return -6;
     }
     tcp->ackq = CreateStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->sendq )
     {
-        nty_trace_tcp ( "Failed to create ack queue.\n" );
+        dk_trace_tcp ( "Failed to create ack queue.\n" );
         return -6;
     }
     tcp->closeq = CreateStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->closeq )
     {
-        nty_trace_tcp ( "Failed to create close queue.\n" );
+        dk_trace_tcp ( "Failed to create close queue.\n" );
         return -6;
     }
     tcp->closeq_int = CreateInternalStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->closeq_int )
     {
-        nty_trace_tcp ( "Failed to create close int queue.\n" );
+        dk_trace_tcp ( "Failed to create close int queue.\n" );
         return -6;
     }
 
     tcp->resetq = CreateStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->resetq )
     {
-        nty_trace_tcp ( "Failed to create reset queue.\n" );
+        dk_trace_tcp ( "Failed to create reset queue.\n" );
         return -6;
     }
     tcp->resetq_int = CreateInternalStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->resetq_int )
     {
-        nty_trace_tcp ( "Failed to create reset int queue.\n" );
+        dk_trace_tcp ( "Failed to create reset int queue.\n" );
         return -6;
     }
     tcp->destroyq = CreateStreamQueue ( NTY_MAX_CONCURRENCY );
     if ( !tcp->destroyq )
     {
-        nty_trace_tcp ( "Failed to create destroy queue.\n" );
+        dk_trace_tcp ( "Failed to create destroy queue.\n" );
         return -6;
     }
-    tcp->g_sender = nty_tcp_create_sender ( -1 );
+    tcp->g_sender = dk_tcp_create_sender ( -1 );
     if ( !tcp->g_sender )
     {
-        nty_trace_tcp ( "Failed to create global sender structure.\n" );
+        dk_trace_tcp ( "Failed to create global sender structure.\n" );
         return -7;
     }
     for ( i = 0; i < ETH_NUM; i ++ )
     {
-        tcp->n_sender[i] = nty_tcp_create_sender ( i );
+        tcp->n_sender[i] = dk_tcp_create_sender ( i );
         if ( !tcp->n_sender[i] )
         {
-            nty_trace_tcp ( "Failed to create global sender structure.\n" );
+            dk_trace_tcp ( "Failed to create global sender structure.\n" );
             return -7;
         }
     }
@@ -2262,18 +2262,18 @@ int nty_tcp_init_manager ( nty_thread_context* ctx )
     TAILQ_INIT ( &tcp->snd_br_list );
 #endif
 
-    nty_tcp = tcp;
+    dk_tcp = tcp;
 
     return 0;
 }
 /*
-* 函数名: nty_tcp_init_thread_context
+* 函数名: dk_tcp_init_thread_context
 * 功能    : 协议栈初始化
 * 入参    : 无
 * 出参    : 无
 * 注意    ：无
 */
-void nty_tcp_init_thread_context ( nty_thread_context* ctx )
+void dk_tcp_init_thread_context ( dk_thread_context* ctx )
 {
 
     assert ( ctx != NULL );
@@ -2281,23 +2281,23 @@ void nty_tcp_init_thread_context ( nty_thread_context* ctx )
     ctx->cpu = 0;
     ctx->thread = pthread_self();
 
-    nty_tcp_init_manager ( ctx );
+    dk_tcp_init_manager ( ctx );
 
     if ( pthread_mutex_init ( &ctx->smap_lock, NULL ) )
     {
-        nty_trace_tcp ( "pthread_mutex_init of ctx->smap_lock\n" );
+        dk_trace_tcp ( "pthread_mutex_init of ctx->smap_lock\n" );
         exit ( -1 );
     }
 
     if ( pthread_mutex_init ( &ctx->flow_pool_lock, NULL ) )
     {
-        nty_trace_tcp ( "pthread_mutex_init of ctx->flow_pool_lock\n" );
+        dk_trace_tcp ( "pthread_mutex_init of ctx->flow_pool_lock\n" );
         exit ( -1 );
     }
 
     if ( pthread_mutex_init ( &ctx->socket_pool_lock, NULL ) )
     {
-        nty_trace_tcp ( "pthread_mutex_init of ctx->socket_pool_lock\n" );
+        dk_trace_tcp ( "pthread_mutex_init of ctx->socket_pool_lock\n" );
         exit ( -1 );
     }
 
@@ -2305,29 +2305,29 @@ void nty_tcp_init_thread_context ( nty_thread_context* ctx )
 }
 
 
-int nty_tcp_handle_apicall ( uint32_t cur_ts )
+int dk_tcp_handle_apicall ( uint32_t cur_ts )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     assert ( tcp != NULL );
 
-    nty_tcp_stream* stream = NULL;
+    dk_tcp_stream* stream = NULL;
     while ( ( stream = StreamDequeue ( tcp->connectq ) ) )
     {
-        nty_tcp_addto_controllist ( tcp, stream );
+        dk_tcp_addto_controllist ( tcp, stream );
     }
 
     while ( ( stream = StreamDequeue ( tcp->sendq ) ) )
     {
-        nty_trace_tcp ( "buf: %s, mss:%d\n", stream->snd->sndbuf->data, stream->snd->mss );
+        dk_trace_tcp ( "buf: %s, mss:%d\n", stream->snd->sndbuf->data, stream->snd->mss );
         stream->snd->on_sendq = 0;
-        nty_tcp_addto_sendlist ( tcp, stream );
+        dk_tcp_addto_sendlist ( tcp, stream );
     }
 
     while ( ( stream = StreamDequeue ( tcp->ackq ) ) )
     {
         stream->snd->on_ackq = 0;
-        nty_tcp_enqueue_acklist ( tcp, stream, cur_ts, ACK_OPT_AGGREGATE );
+        dk_tcp_enqueue_acklist ( tcp, stream, cur_ts, ACK_OPT_AGGREGATE );
     }
 
     int handled = 0, delayed = 0;
@@ -2335,7 +2335,7 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
 
     while ( ( stream = StreamDequeue ( tcp->closeq ) ) )
     {
-        nty_tcp_send* snd = stream->snd;
+        dk_tcp_send* snd = stream->snd;
         snd->on_closeq = 0;
 
         if ( snd->sndbuf )
@@ -2356,12 +2356,12 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
                 stream->close_reason = TCP_RESET;
                 stream->state = NTY_TCP_CLOSED;
 
-                nty_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
+                dk_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
                 DestroyTcpStream ( tcp, stream );
             }
             else
             {
-                nty_trace_tcp ( "Stream already closed.\n" );
+                dk_trace_tcp ( "Stream already closed.\n" );
             }
         }
         else if ( snd->on_control_list )
@@ -2389,13 +2389,13 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
             if ( stream->state == NTY_TCP_ESTABLISHED )
             {
                 stream->state = NTY_TCP_FIN_WAIT_1;
-                nty_trace_tcp ( "Stream %d: NTY_TCP_FIN_WAIT_1\n", stream->id );
+                dk_trace_tcp ( "Stream %d: NTY_TCP_FIN_WAIT_1\n", stream->id );
 
             }
             else if ( stream->state == NTY_TCP_CLOSE_WAIT )
             {
                 stream->state = NTY_TCP_LAST_ACK;
-                nty_trace_tcp ( "Stream %d: NTY_TCP_LAST_ACK\n", stream->id );
+                dk_trace_tcp ( "Stream %d: NTY_TCP_LAST_ACK\n", stream->id );
             }
             stream->control_list_waiting = 1;
         }
@@ -2405,19 +2405,19 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
             if ( stream->state == NTY_TCP_ESTABLISHED )
             {
                 stream->state = NTY_TCP_FIN_WAIT_1;
-                nty_trace_tcp ( "Stream %d: NTY_TCP_FIN_WAIT_1\n", stream->id );
+                dk_trace_tcp ( "Stream %d: NTY_TCP_FIN_WAIT_1\n", stream->id );
 
             }
             else if ( stream->state == NTY_TCP_CLOSE_WAIT )
             {
                 stream->state = NTY_TCP_LAST_ACK;
-                nty_trace_tcp ( "Stream %d: NTY_TCP_LAST_ACK\n", stream->id );
+                dk_trace_tcp ( "Stream %d: NTY_TCP_LAST_ACK\n", stream->id );
             }
-            nty_tcp_addto_controllist ( tcp, stream );
+            dk_tcp_addto_controllist ( tcp, stream );
         }
         else
         {
-            nty_trace_tcp ( "Already closed connection!\n" );
+            dk_trace_tcp ( "Already closed connection!\n" );
         }
 
     }
@@ -2436,12 +2436,12 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
             {
                 stream->close_reason = TCP_RESET;
                 stream->state = NTY_TCP_CLOSED;
-                nty_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
+                dk_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
                 DestroyTcpStream ( tcp, stream );
             }
             else
             {
-                nty_trace_tcp ( "Stream already closed.\n" );
+                dk_trace_tcp ( "Stream already closed.\n" );
             }
 
         }
@@ -2459,12 +2459,12 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
             {
                 stream->close_reason = TCP_ACTIVE_CLOSE;
                 stream->state = NTY_TCP_CLOSED;
-                nty_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
-                nty_tcp_addto_controllist ( tcp, stream );
+                dk_trace_tcp ( "Stream %d: TCP_ST_CLOSED\n", stream->id );
+                dk_tcp_addto_controllist ( tcp, stream );
             }
             else
             {
-                nty_trace_tcp ( "Stream already closed.\n" );
+                dk_trace_tcp ( "Stream already closed.\n" );
             }
         }
     }
@@ -2490,12 +2490,12 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
             {
                 stream->close_reason = TCP_ACTIVE_CLOSE;
                 stream->state = NTY_TCP_CLOSED;
-                nty_trace_tcp ( "Stream %d: NTY_TCP_CLOSED\n", stream->id );
-                nty_tcp_addto_controllist ( tcp, stream );
+                dk_trace_tcp ( "Stream %d: NTY_TCP_CLOSED\n", stream->id );
+                dk_tcp_addto_controllist ( tcp, stream );
             }
             else
             {
-                nty_trace_tcp ( "Stream already closed.\n" );
+                dk_trace_tcp ( "Stream already closed.\n" );
             }
         }
     }
@@ -2508,7 +2508,7 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
 
     if ( stream != NULL )
     {
-        nty_trace_tcp ( "nty_tcp_handle_apicall --> state %d\n", stream->state );
+        dk_trace_tcp ( "dk_tcp_handle_apicall --> state %d\n", stream->state );
     }
 
     tcp->wakeup_flag = 0;
@@ -2516,17 +2516,17 @@ int nty_tcp_handle_apicall ( uint32_t cur_ts )
     return 0;
 }
 
-int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
+int dk_tcp_flush_sendbuffer ( dk_tcp_stream* cur_stream, uint32_t cur_ts )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     assert ( tcp != NULL );
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     if ( !snd->sndbuf )
     {
-        nty_trace_tcp ( "Stream %d: No send buffer available.\n", cur_stream->id );
+        dk_trace_tcp ( "Stream %d: No send buffer available.\n", cur_stream->id );
         assert ( 0 );
         return 0;
     }
@@ -2544,7 +2544,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
     uint32_t seq = 0;
     uint32_t buffered_len = 0;
     uint8_t* data = NULL;
-    uint32_t maxlen = snd->mss - nty_calculate_option ( NTY_TCPHDR_ACK );
+    uint32_t maxlen = snd->mss - dk_calculate_option ( NTY_TCPHDR_ACK );
     uint16_t len = 0;
     uint8_t wack_sent = 0;
     int16_t sndlen = 0;
@@ -2554,7 +2554,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         seq = cur_stream->snd_nxt;
         if ( TCP_SEQ_LT ( seq, snd->sndbuf->head_seq ) )
         {
-            nty_trace_tcp ( "Stream %d: Invalid sequence to send. "
+            dk_trace_tcp ( "Stream %d: Invalid sequence to send. "
                             "state: %d, seq: %u, head_seq: %u.\n",
                             cur_stream->id, cur_stream->state,
                             seq, snd->sndbuf->head_seq );
@@ -2565,7 +2565,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         buffered_len = snd->sndbuf->head_seq + snd->sndbuf->len - seq;
         if ( cur_stream->state == NTY_TCP_ESTABLISHED )
         {
-            nty_trace_tcp ( "head_seq: %u, len: %u, seq: %u, "
+            dk_trace_tcp ( "head_seq: %u, len: %u, seq: %u, "
                             "buffered_len: %u, mss:%d, cur_mss:%d\n", snd->sndbuf->head_seq,
                             snd->sndbuf->len, seq, buffered_len, snd->mss, cur_stream->snd->mss );
         }
@@ -2596,7 +2596,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
 
         if ( cur_stream->state > NTY_TCP_ESTABLISHED )
         {
-            nty_trace_tcp ( "Flushing after ESTABLISHED: seq: %u, len: %u, "
+            dk_trace_tcp ( "Flushing after ESTABLISHED: seq: %u, len: %u, "
                             "buffered_len: %u\n", seq, len, buffered_len );
         }
 
@@ -2606,7 +2606,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
             {
                 if ( !wack_sent && TS_TO_MSEC ( cur_ts - snd->ts_lastack_sent ) > 500 )
                 {
-                    nty_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_WACK );
+                    dk_tcp_enqueue_acklist ( tcp, cur_stream, cur_ts, ACK_OPT_WACK );
                 }
                 else
                 {
@@ -2617,7 +2617,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
             goto out;
         }
 
-        sndlen = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, data, len );
+        sndlen = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, data, len );
         if ( sndlen < 0 )
         {
             packets = sndlen;
@@ -2625,7 +2625,7 @@ int nty_tcp_flush_sendbuffer ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         }
         packets ++;
 
-        nty_trace_api ( "window:%d, len:%d\n", window, len );
+        dk_trace_api ( "window:%d, len:%d\n", window, len );
         window -= len;
     }
 
@@ -2635,40 +2635,40 @@ out:
     return packets;
 }
 
-int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
+int dk_tcp_send_controlpkt ( dk_tcp_stream* cur_stream, uint32_t cur_ts )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
     int ret = 0;
 
     if ( cur_stream->state == NTY_TCP_SYN_SENT )
     {
 
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_SYN, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_SYN, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_SYN_RCVD )
     {
 
         cur_stream->snd_nxt = snd->iss;
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_SYN | NTY_TCPHDR_ACK, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_SYN | NTY_TCPHDR_ACK, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_ESTABLISHED )
     {
 
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_CLOSE_WAIT )
     {
 
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_LAST_ACK )
@@ -2680,7 +2680,7 @@ int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         }
         else
         {
-            ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
+            ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
         }
 
     }
@@ -2693,14 +2693,14 @@ int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         }
         else
         {
-            ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
+            ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
         }
 
     }
     else if ( cur_stream->state == NTY_TCP_FIN_WAIT_2 )
     {
 
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_CLOSING )
@@ -2710,23 +2710,23 @@ int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         {
             if ( cur_stream->snd_nxt == snd->fss )
             {
-                ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
+                ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
             }
             else
             {
-                ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+                ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
             }
         }
         else
         {
-            ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
+            ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_FIN | NTY_TCPHDR_ACK, NULL, 0 );
         }
 
     }
     else if ( cur_stream->state == NTY_TCP_TIME_WAIT )
     {
 
-        ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+        ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
 
     }
     else if ( cur_stream->state == NTY_TCP_CLOSED )
@@ -2738,7 +2738,7 @@ int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
         }
         else
         {
-            ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_RST, NULL, 0 );
+            ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_RST, NULL, 0 );
             if ( ret >= 0 )
             {
                 DestroyTcpStream ( tcp,cur_stream );
@@ -2749,15 +2749,15 @@ int nty_tcp_send_controlpkt ( nty_tcp_stream* cur_stream, uint32_t cur_ts )
     return ret;
 }
 
-int nty_tcp_write_controllist ( nty_sender* sender, uint32_t cur_ts, int thresh )
+int dk_tcp_write_controllist ( dk_sender* sender, uint32_t cur_ts, int thresh )
 {
 
     thresh = MIN ( thresh, sender->control_list_cnt );
-    nty_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->control_list );
-    nty_tcp_stream* last = TAILQ_LAST ( &sender->control_list, control_head );
+    dk_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->control_list );
+    dk_tcp_stream* last = TAILQ_LAST ( &sender->control_list, control_head );
 
     int cnt = 0, ret = -1;
-    nty_tcp_stream* next = NULL;
+    dk_tcp_stream* next = NULL;
     while ( cur_stream )
     {
         if ( ++cnt > thresh )
@@ -2774,7 +2774,7 @@ int nty_tcp_write_controllist ( nty_sender* sender, uint32_t cur_ts, int thresh 
         {
             cur_stream->snd->on_control_list = 0;
 
-            ret = nty_tcp_send_controlpkt ( cur_stream, cur_ts );
+            ret = dk_tcp_send_controlpkt ( cur_stream, cur_ts );
             if ( ret < 0 )
             {
                 TAILQ_INSERT_HEAD ( &sender->control_list, cur_stream, snd->control_link );
@@ -2786,7 +2786,7 @@ int nty_tcp_write_controllist ( nty_sender* sender, uint32_t cur_ts, int thresh 
         }
         else
         {
-            nty_trace_tcp ( "Stream %d: not on control list.\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: not on control list.\n", cur_stream->id );
         }
 
         if ( cur_stream == last )
@@ -2801,17 +2801,17 @@ int nty_tcp_write_controllist ( nty_sender* sender, uint32_t cur_ts, int thresh 
     return cnt;
 }
 
-int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
+int dk_tcp_write_datalist ( dk_sender* sender, uint32_t cur_ts, int thresh )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     assert ( tcp != NULL );
 
-    nty_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->send_list );
-    nty_tcp_stream* last = TAILQ_LAST ( &sender->send_list, send_head );
+    dk_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->send_list );
+    dk_tcp_stream* last = TAILQ_LAST ( &sender->send_list, send_head );
 
     int cnt = 0, ret = -1;
-    nty_tcp_stream* next = NULL;
+    dk_tcp_stream* next = NULL;
     while ( cur_stream )
     {
         if ( ++cnt > thresh )
@@ -2823,7 +2823,7 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
 
         TAILQ_REMOVE ( &sender->send_list, cur_stream, snd->send_link );
 
-        nty_trace_tcp ( "send_list:%d, state:%d\n", cur_stream->snd->on_send_list, cur_stream->state );
+        dk_trace_tcp ( "send_list:%d, state:%d\n", cur_stream->snd->on_send_list, cur_stream->state );
         if ( cur_stream->snd->on_send_list )
         {
             ret = 0;
@@ -2837,7 +2837,7 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
                 }
                 else
                 {
-                    ret = nty_tcp_flush_sendbuffer ( cur_stream, cur_ts );
+                    ret = dk_tcp_flush_sendbuffer ( cur_stream, cur_ts );
                 }
 
             }
@@ -2845,11 +2845,11 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
                       cur_stream->state == NTY_TCP_FIN_WAIT_1 ||
                       cur_stream->state == NTY_TCP_LAST_ACK )
             {
-                ret = nty_tcp_flush_sendbuffer ( cur_stream, cur_ts );
+                ret = dk_tcp_flush_sendbuffer ( cur_stream, cur_ts );
             }
             else
             {
-                nty_trace_tcp ( "Stream %d: on_send_list at state %d\n",
+                dk_trace_tcp ( "Stream %d: on_send_list at state %d\n",
                                 cur_stream->id, cur_stream->state );
             }
 
@@ -2880,7 +2880,7 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
                     if ( !cur_stream->snd->on_ack_list )
                     {
                         cur_stream->control_list_waiting = 0;
-                        nty_tcp_addto_controllist ( tcp, cur_stream );
+                        dk_tcp_addto_controllist ( tcp, cur_stream );
                     }
                 }
             }
@@ -2888,7 +2888,7 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
         else
         {
 
-            nty_trace_tcp ( "Stream %d: not on send list.\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: not on send list.\n", cur_stream->id );
 
         }
 
@@ -2904,15 +2904,15 @@ int nty_tcp_write_datalist ( nty_sender* sender, uint32_t cur_ts, int thresh )
 }
 
 
-int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
+int dk_tcp_write_acklist ( dk_sender* sender, uint32_t cur_ts, int thresh )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     assert ( tcp != NULL );
 
-    nty_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->ack_list );
-    nty_tcp_stream* last = TAILQ_LAST ( &sender->ack_list, ack_head );
-    nty_tcp_stream* next = NULL;
+    dk_tcp_stream* cur_stream = TAILQ_FIRST ( &sender->ack_list );
+    dk_tcp_stream* last = TAILQ_LAST ( &sender->ack_list, ack_head );
+    dk_tcp_stream* next = NULL;
 
     int cnt = 0;
     int to_ack = 0;
@@ -2951,7 +2951,7 @@ int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
             }
             else
             {
-                nty_trace_tcp ( "Stream %u (%d): "
+                dk_trace_tcp ( "Stream %u (%d): "
                                 "Try sending ack at not proper state. "
                                 "seq: %u, ack_seq: %u, on_control_list: %u\n",
                                 cur_stream->id, cur_stream->state,
@@ -2965,7 +2965,7 @@ int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
 
                 while ( cur_stream->snd->ack_cnt > 0 )
                 {
-                    ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
+                    ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK, NULL, 0 );
                     if ( ret < 0 )
                     {
                         break;
@@ -2977,7 +2977,7 @@ int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
                 if ( cur_stream->snd->is_wack )
                 {
                     cur_stream->snd->is_wack = 0;
-                    ret = nty_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK | NTY_TCPHDR_CWR, NULL, 0 );
+                    ret = dk_tcp_send_tcppkt ( cur_stream, cur_ts, NTY_TCPHDR_ACK | NTY_TCPHDR_CWR, NULL, 0 );
                     if ( ret < 0 )
                     {
                         cur_stream->snd->is_wack = 1;
@@ -3006,14 +3006,14 @@ int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
                 if ( !cur_stream->snd->on_send_list )
                 {
                     cur_stream->control_list_waiting = 0;
-                    nty_tcp_addto_controllist ( tcp, cur_stream );
+                    dk_tcp_addto_controllist ( tcp, cur_stream );
                 }
             }
 
         }
         else
         {
-            nty_trace_tcp ( "Stream %d: not on ack list.\n", cur_stream->id );
+            dk_trace_tcp ( "Stream %d: not on ack list.\n", cur_stream->id );
             TAILQ_REMOVE ( &sender->ack_list, cur_stream, snd->ack_link );
 
             sender->ack_list_cnt --;
@@ -3031,10 +3031,10 @@ int nty_tcp_write_acklist ( nty_sender* sender, uint32_t cur_ts, int thresh )
     return cnt;
 }
 
-void nty_tcp_write_chunks ( uint32_t cur_ts )
+void dk_tcp_write_chunks ( uint32_t cur_ts )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     assert ( tcp != NULL );
 
     int thresh = NTY_MAX_CONCURRENCY;
@@ -3043,16 +3043,16 @@ void nty_tcp_write_chunks ( uint32_t cur_ts )
 
     if ( tcp->g_sender->control_list_cnt )
     {
-        nty_tcp_write_controllist ( tcp->g_sender, cur_ts, thresh );
+        dk_tcp_write_controllist ( tcp->g_sender, cur_ts, thresh );
     }
     if ( tcp->g_sender->ack_list_cnt )
     {
-        nty_tcp_write_acklist ( tcp->g_sender, cur_ts, thresh );
+        dk_tcp_write_acklist ( tcp->g_sender, cur_ts, thresh );
     }
 
     if ( tcp->g_sender->send_list_cnt )
     {
-        nty_tcp_write_datalist ( tcp->g_sender, cur_ts, thresh );
+        dk_tcp_write_datalist ( tcp->g_sender, cur_ts, thresh );
     }
 
 #if NTY_ENABLE_MULTI_NIC
@@ -3061,15 +3061,15 @@ void nty_tcp_write_chunks ( uint32_t cur_ts )
     {
         if ( tcp->n_sender[i]->control_list_cnt )
         {
-            nty_tcp_write_controllist ( tcp->n_sender[i], cur_ts, thresh );
+            dk_tcp_write_controllist ( tcp->n_sender[i], cur_ts, thresh );
         }
         if ( tcp->n_sender[i]->ack_list_cnt )
         {
-            nty_tcp_write_acklist ( tcp->n_sender[i], cur_ts, thresh );
+            dk_tcp_write_acklist ( tcp->n_sender[i], cur_ts, thresh );
         }
         if ( tcp->n_sender[i]->send_list_cnt )
         {
-            nty_tcp_write_datalist ( tcp->n_sender[i], cur_ts, thresh );
+            dk_tcp_write_datalist ( tcp->n_sender[i], cur_ts, thresh );
         }
     }
 #endif

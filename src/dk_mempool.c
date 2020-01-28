@@ -40,23 +40,23 @@
 
 #include "dk_mempool.h"
 
-nty_mempool* nty_mempool_create ( int chunk_size, size_t total_size, int is_hugepage )
+dk_mempool* dk_mempool_create ( int chunk_size, size_t total_size, int is_hugepage )
 {
 
-    if ( chunk_size < ( int ) sizeof ( nty_mem_chunk ) )
+    if ( chunk_size < ( int ) sizeof ( dk_mem_chunk ) )
     {
         return NULL;
     }
     if ( chunk_size % 4 != 0 )
     {
-        printf ( "nty_mempool_create --> chunk_size: %d\n", chunk_size );
+        printf ( "dk_mempool_create --> chunk_size: %d\n", chunk_size );
         return NULL;
     }
 
-    nty_mempool* mp = calloc ( 1, sizeof ( nty_mempool ) );
+    dk_mempool* mp = calloc ( 1, sizeof ( dk_mempool ) );
     if ( mp == NULL )
     {
-        printf ( "nty_mempool_create --> calloc failed\n" );
+        printf ( "dk_mempool_create --> calloc failed\n" );
         return NULL;
     }
 
@@ -92,14 +92,14 @@ nty_mempool* nty_mempool_create ( int chunk_size, size_t total_size, int is_huge
         }
     }
 
-    mp->mp_freeptr = ( nty_mem_chunk* ) mp->mp_startptr;
+    mp->mp_freeptr = ( dk_mem_chunk* ) mp->mp_startptr;
     mp->mp_freeptr->mc_free_chunks = mp->mp_free_chunks;
     mp->mp_freeptr->next = NULL;
 
     return mp;
 }
 
-void nty_mempool_destory ( nty_mempool* mp )
+void dk_mempool_destory ( dk_mempool* mp )
 {
     if ( mp->mp_type == MEM_HUGEPAGE )
     {
@@ -113,10 +113,10 @@ void nty_mempool_destory ( nty_mempool* mp )
     free ( mp );
 }
 
-void* nty_mempool_alloc ( nty_mempool* mp )
+void* dk_mempool_alloc ( dk_mempool* mp )
 {
 
-    nty_mem_chunk* p = mp->mp_freeptr;
+    dk_mem_chunk* p = mp->mp_freeptr;
 
     if ( mp->mp_free_chunks == 0 )
     {
@@ -130,7 +130,7 @@ void* nty_mempool_alloc ( nty_mempool* mp )
 
     if ( p->mc_free_chunks )
     {
-        mp->mp_freeptr = ( nty_mem_chunk* ) ( ( u_char* ) p + mp->mp_chunk_size );
+        mp->mp_freeptr = ( dk_mem_chunk* ) ( ( u_char* ) p + mp->mp_chunk_size );
         mp->mp_freeptr->mc_free_chunks = p->mc_free_chunks;
         mp->mp_freeptr->next = p->next;
     }
@@ -143,9 +143,9 @@ void* nty_mempool_alloc ( nty_mempool* mp )
 }
 
 
-void nty_mempool_free ( nty_mempool* mp, void* p )
+void dk_mempool_free ( dk_mempool* mp, void* p )
 {
-    nty_mem_chunk* mcp = ( nty_mem_chunk* ) p;
+    dk_mem_chunk* mcp = ( dk_mem_chunk* ) p;
 
     assert ( ( ( u_char* ) p - mp->mp_startptr ) % mp->mp_chunk_size == 0 );
 
@@ -156,12 +156,12 @@ void nty_mempool_free ( nty_mempool* mp, void* p )
 }
 
 
-int nty_mempool_getfree_chunks ( nty_mempool* mp )
+int dk_mempool_getfree_chunks ( dk_mempool* mp )
 {
     return mp->mp_free_chunks;
 }
 
-uint32_t nty_mempool_isdanger ( nty_mempool* mp )
+uint32_t dk_mempool_isdanger ( dk_mempool* mp )
 {
 #define DANGER_THREADSHOLD  0.95
 #define SAFE_THREADSHOLD    0.90

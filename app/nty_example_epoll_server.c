@@ -84,7 +84,7 @@ int main()
 
     usleep ( 1 );
 
-    int sockfd = nty_socket ( AF_INET, SOCK_STREAM, 0 );
+    int sockfd = dk_socket ( AF_INET, SOCK_STREAM, 0 );
     if ( sockfd < 0 )
     {
         perror ( "socket" );
@@ -98,28 +98,28 @@ int main()
     addr.sin_port = htons ( 9096 );
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    if ( nty_bind ( sockfd, ( struct sockaddr* ) &addr, sizeof ( struct sockaddr_in ) ) < 0 )
+    if ( dk_bind ( sockfd, ( struct sockaddr* ) &addr, sizeof ( struct sockaddr_in ) ) < 0 )
     {
         perror ( "bind" );
         return 2;
     }
 
-    if ( nty_listen ( sockfd, 5 ) < 0 )
+    if ( dk_listen ( sockfd, 5 ) < 0 )
     {
         return 3;
     }
 
-    int epoll_fd = nty_epoll_create ( EPOLL_SIZE );
-    nty_epoll_event ev, events[EPOLL_SIZE];
+    int epoll_fd = dk_epoll_create ( EPOLL_SIZE );
+    dk_epoll_event ev, events[EPOLL_SIZE];
 
     ev.events = NTY_EPOLLIN;
     ev.data = ( uint64_t ) sockfd;
-    nty_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_ADD, sockfd, &ev );
+    dk_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_ADD, sockfd, &ev );
 
     while ( 1 )
     {
 
-        int nready = nty_epoll_wait ( epoll_fd, events, EPOLL_SIZE, -1 );
+        int nready = dk_epoll_wait ( epoll_fd, events, EPOLL_SIZE, -1 );
         if ( nready == -1 )
         {
             printf ( "epoll_wait\n" );
@@ -139,7 +139,7 @@ int main()
                 memset ( &client_addr, 0, sizeof ( struct sockaddr_in ) );
                 socklen_t client_len = sizeof ( client_addr );
 
-                int clientfd = nty_accept ( sockfd, ( struct sockaddr* ) &client_addr, &client_len );
+                int clientfd = dk_accept ( sockfd, ( struct sockaddr* ) &client_addr, &client_len );
                 if ( clientfd <= 0 )
                 {
                     continue;
@@ -151,7 +151,7 @@ int main()
 
                 ev.events = NTY_EPOLLIN | NTY_EPOLLET;
                 ev.data = ( uint64_t ) clientfd;
-                nty_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_ADD, clientfd, &ev );
+                dk_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_ADD, clientfd, &ev );
 
             }
             else
@@ -160,7 +160,7 @@ int main()
                 int clientfd = ( int ) events[i].data;
 
                 char buffer[BUFFER_LENGTH] = {0};
-                int ret = nty_recv ( clientfd, buffer, BUFFER_LENGTH, 0 );
+                int ret = dk_recv ( clientfd, buffer, BUFFER_LENGTH, 0 );
                 if ( ret < 0 )
                 {
                     if ( errno == EAGAIN || errno == EWOULDBLOCK )
@@ -168,11 +168,11 @@ int main()
                         printf ( "read all data" );
                     }
 
-                    nty_close ( clientfd );
+                    dk_close ( clientfd );
 
                     ev.events = NTY_EPOLLIN | NTY_EPOLLET;
                     ev.data = ( uint64_t ) clientfd;
-                    nty_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_DEL, clientfd, &ev );
+                    dk_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_DEL, clientfd, &ev );
                 }
                 else if ( ret == 0 )
                 {
@@ -182,14 +182,14 @@ int main()
 
                     ev.events = NTY_EPOLLIN | NTY_EPOLLET;
                     ev.data = clientfd;
-                    nty_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_DEL, clientfd, &ev );
+                    dk_epoll_ctl ( epoll_fd, NTY_EPOLL_CTL_DEL, clientfd, &ev );
 
                     break;
                 }
                 else
                 {
                     printf ( "Recv: %s, %d Bytes\n", buffer, ret );
-                    nty_send ( clientfd, buffer, ret );
+                    dk_send ( clientfd, buffer, ret );
                 }
 
             }

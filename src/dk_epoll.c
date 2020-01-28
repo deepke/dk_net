@@ -40,7 +40,7 @@
 
 #include <pthread.h>
 
-extern nty_tcp_manager* nty_get_tcp_manager ( void );
+extern dk_tcp_manager* dk_get_tcp_manager ( void );
 
 char* event_str[] = {"NONE", "IN", "PRI", "OUT", "ERR", "HUP", "RDHUP"};
 
@@ -85,9 +85,9 @@ char* EventToString ( uint32_t event )
 }
 
 
-nty_event_queue* nty_create_event_queue ( int size )
+dk_event_queue* dk_create_event_queue ( int size )
 {
-    nty_event_queue* eq = ( nty_event_queue* ) calloc ( 1, sizeof ( nty_event_queue ) );
+    dk_event_queue* eq = ( dk_event_queue* ) calloc ( 1, sizeof ( dk_event_queue ) );
     if ( !eq )
     {
         return NULL;
@@ -96,7 +96,7 @@ nty_event_queue* nty_create_event_queue ( int size )
     eq->start = 0;
     eq->end = 0;
     eq->size = size;
-    eq->events = ( nty_epoll_event_int* ) calloc ( size, sizeof ( nty_epoll_event_int ) );
+    eq->events = ( dk_epoll_event_int* ) calloc ( size, sizeof ( dk_epoll_event_int ) );
     if ( !eq->events )
     {
         free ( eq );
@@ -107,7 +107,7 @@ nty_event_queue* nty_create_event_queue ( int size )
     return eq;
 }
 
-void nty_destory_event_queue ( nty_event_queue* eq )
+void dk_destory_event_queue ( dk_event_queue* eq )
 {
     if ( eq->events )
     {
@@ -117,25 +117,25 @@ void nty_destory_event_queue ( nty_event_queue* eq )
 }
 
 
-int nty_close_epoll_socket ( int epid )
+int dk_close_epoll_socket ( int epid )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    nty_epoll* ep = tcp->smap[epid].ep;
+    dk_epoll* ep = tcp->smap[epid].ep;
     if ( !ep )
     {
         errno = EINVAL;
         return -1;
     }
 
-    nty_destory_event_queue ( ep->usr_queue );
-    nty_destory_event_queue ( ep->usr_shadow_queue );
-    nty_destory_event_queue ( ep->queue );
+    dk_destory_event_queue ( ep->usr_queue );
+    dk_destory_event_queue ( ep->usr_shadow_queue );
+    dk_destory_event_queue ( ep->queue );
 
     pthread_mutex_lock ( &ep->epoll_lock );
     tcp->ep = NULL;
@@ -152,17 +152,17 @@ int nty_close_epoll_socket ( int epid )
 }
 
 //ep   queue copy to usr_queue
-int nty_epoll_flush_events ( uint32_t cur_ts )
+int dk_epoll_flush_events ( uint32_t cur_ts )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    nty_epoll* ep = tcp->ep;
-    nty_event_queue* usrq = ep->usr_queue;
-    nty_event_queue* tcpq = ep->queue;
+    dk_epoll* ep = tcp->ep;
+    dk_event_queue* usrq = ep->usr_queue;
+    dk_event_queue* tcpq = ep->queue;
 
     pthread_mutex_lock ( &ep->epoll_lock );
 
@@ -190,7 +190,7 @@ int nty_epoll_flush_events ( uint32_t cur_ts )
             ( ep->usr_queue->num_events > 0 || ep->usr_shadow_queue->num_events > 0 ) )
     {
 
-        nty_trace_epoll ( "Broadcasting events. num: %d, cur_ts: %u, prev_ts: %u\n",
+        dk_trace_epoll ( "Broadcasting events. num: %d, cur_ts: %u, prev_ts: %u\n",
                           ep->usr_queue->num_events, cur_ts, tcp->ts_last_event );
 
         tcp->ts_last_event = cur_ts;
@@ -204,9 +204,9 @@ int nty_epoll_flush_events ( uint32_t cur_ts )
 }
 
 
-int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* socket, uint32_t event )
+int dk_epoll_add_event ( dk_epoll* ep, int queue_type, struct _dk_socket_map* socket, uint32_t event )
 {
-    nty_event_queue* eq = NULL;
+    dk_event_queue* eq = NULL;
 
     if ( !ep || !socket || !event )
     {
@@ -234,13 +234,13 @@ int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* 
     }
     else
     {
-        nty_trace_epoll ( "Non-existing event queue type!\n" );
+        dk_trace_epoll ( "Non-existing event queue type!\n" );
         return -1;
     }
 
     if ( eq->num_events >= eq->size )
     {
-        nty_trace_epoll ( "Exceeded epoll event queue! num_events: %d, size: %d\n",
+        dk_trace_epoll ( "Exceeded epoll event queue! num_events: %d, size: %d\n",
                           eq->num_events, eq->size );
         if ( queue_type == USR_EVENT_QUEUE )
         {
@@ -261,7 +261,7 @@ int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* 
         eq->end = 0;
     }
     eq->num_events ++;
-    nty_trace_epoll ( "nty_epoll_add_event --> num_events:%d\n", eq->num_events );
+    dk_trace_epoll ( "dk_epoll_add_event --> num_events:%d\n", eq->num_events );
 
     if ( queue_type == USR_EVENT_QUEUE )
     {
@@ -273,15 +273,15 @@ int nty_epoll_add_event ( nty_epoll* ep, int queue_type, struct _dk_socket_map* 
     return 0;
 }
 
-int nty_raise_pending_stream_events ( nty_epoll* ep, nty_socket_map* socket )
+int dk_raise_pending_stream_events ( dk_epoll* ep, dk_socket_map* socket )
 {
 
-    nty_tcp_stream* stream = socket->stream;
+    dk_tcp_stream* stream = socket->stream;
     if ( !stream )
     {
         return -1;
     }
-    nty_trace_epoll ( "Stream %d at state %d\n", stream->id, stream->state );
+    dk_trace_epoll ( "Stream %d at state %d\n", stream->id, stream->state );
     if ( stream->state < NTY_TCP_ESTABLISHED )
     {
         return -1;
@@ -289,26 +289,26 @@ int nty_raise_pending_stream_events ( nty_epoll* ep, nty_socket_map* socket )
 
     if ( socket->epoll & NTY_EPOLLIN )
     {
-        nty_tcp_recv* rcv = stream->rcv;
+        dk_tcp_recv* rcv = stream->rcv;
         if ( rcv->recvbuf && rcv->recvbuf->merged_len > 0 )
         {
-            nty_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
+            dk_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
         }
         else if ( stream->state == NTY_TCP_CLOSE_WAIT )
         {
-            nty_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
+            dk_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
         }
     }
 
     if ( socket->epoll & NTY_EPOLLOUT )
     {
-        nty_tcp_send* snd = stream->snd;
+        dk_tcp_send* snd = stream->snd;
         if ( !snd->sndbuf || ( snd->sndbuf && snd->sndbuf->len < snd->snd_wnd ) )
         {
             if ( ! ( socket->events & NTY_EPOLLOUT ) )
             {
-                nty_trace_epoll ( "socket %d: adding write event\n", socket->id );
-                nty_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
+                dk_trace_epoll ( "socket %d: adding write event\n", socket->id );
+                dk_epoll_add_event ( ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
             }
         }
     }
@@ -316,9 +316,9 @@ int nty_raise_pending_stream_events ( nty_epoll* ep, nty_socket_map* socket )
     return 0;
 }
 
-int nty_epoll_create ( int size )
+int dk_epoll_create ( int size )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
 
     if ( size <= 0 )
     {
@@ -326,67 +326,67 @@ int nty_epoll_create ( int size )
         return -1;
     }
 
-    nty_socket_map* epsocket = nty_allocate_socket ( NTY_TCP_SOCK_EPOLL, 0 );
+    dk_socket_map* epsocket = dk_allocate_socket ( NTY_TCP_SOCK_EPOLL, 0 );
     if ( !epsocket )
     {
         errno = ENFILE;
         return -1;
     }
 
-    nty_epoll* ep = ( nty_epoll* ) calloc ( 1, sizeof ( nty_epoll ) );
+    dk_epoll* ep = ( dk_epoll* ) calloc ( 1, sizeof ( dk_epoll ) );
     if ( !ep )
     {
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         return -1;
     }
-    ep->usr_queue = nty_create_event_queue ( size );
+    ep->usr_queue = dk_create_event_queue ( size );
     if ( !ep->usr_queue )
     {
-        nty_free_socket ( epsocket->id, 0 );
+        dk_free_socket ( epsocket->id, 0 );
         free ( ep );
         return -1;
     }
 
-    ep->usr_shadow_queue = nty_create_event_queue ( size );
+    ep->usr_shadow_queue = dk_create_event_queue ( size );
     if ( !ep->usr_shadow_queue )
     {
-        nty_destory_event_queue ( ep->usr_queue );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_destory_event_queue ( ep->usr_queue );
+        dk_free_socket ( epsocket->id, 0 );
         free ( ep );
         return -1;
     }
 
-    ep->queue = nty_create_event_queue ( size );
+    ep->queue = dk_create_event_queue ( size );
     if ( !ep->queue )
     {
-        nty_destory_event_queue ( ep->usr_shadow_queue );
-        nty_destory_event_queue ( ep->usr_queue );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_destory_event_queue ( ep->usr_shadow_queue );
+        dk_destory_event_queue ( ep->usr_queue );
+        dk_free_socket ( epsocket->id, 0 );
         free ( ep );
         return -1;
     }
 
-    nty_trace_epoll ( "epoll structure of size %d created.\n", size );
+    dk_trace_epoll ( "epoll structure of size %d created.\n", size );
 
     tcp->ep = ep;
     epsocket->ep = ep;
 
     if ( pthread_mutex_init ( &ep->epoll_lock, NULL ) )
     {
-        nty_destory_event_queue ( ep->queue );
-        nty_destory_event_queue ( ep->usr_shadow_queue );
-        nty_destory_event_queue ( ep->usr_queue );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_destory_event_queue ( ep->queue );
+        dk_destory_event_queue ( ep->usr_shadow_queue );
+        dk_destory_event_queue ( ep->usr_queue );
+        dk_free_socket ( epsocket->id, 0 );
         free ( ep );
         return -1;
     }
 
     if ( pthread_cond_init ( &ep->epoll_cond, NULL ) )
     {
-        nty_destory_event_queue ( ep->queue );
-        nty_destory_event_queue ( ep->usr_shadow_queue );
-        nty_destory_event_queue ( ep->usr_queue );
-        nty_free_socket ( epsocket->id, 0 );
+        dk_destory_event_queue ( ep->queue );
+        dk_destory_event_queue ( ep->usr_shadow_queue );
+        dk_destory_event_queue ( ep->usr_queue );
+        dk_free_socket ( epsocket->id, 0 );
         free ( ep );
         return -1;
     }
@@ -395,9 +395,9 @@ int nty_epoll_create ( int size )
 }
 
 
-int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
+int dk_epoll_ctl ( int epid, int op, int sockid, dk_epoll_event* event )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( tcp == NULL )
     {
         return -1;
@@ -427,7 +427,7 @@ int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
         return -1;
     }
 
-    nty_epoll* ep = tcp->smap[epid].ep;
+    dk_epoll* ep = tcp->smap[epid].ep;
     if ( !ep || ( !event && op != NTY_EPOLL_CTL_DEL ) )
     {
         errno = EINVAL;
@@ -435,7 +435,7 @@ int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
     }
 
     uint32_t events;
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_socket_map* socket = &tcp->smap[sockid];
     if ( op == NTY_EPOLL_CTL_ADD )
     {
         if ( socket->epoll )
@@ -449,17 +449,17 @@ int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
         socket->ep_data = event->data;
         socket->epoll = events;
 
-        nty_trace_epoll ( "Adding epoll socket %d(type %d) ET: %u, IN: %u, OUT: %u\n",
+        dk_trace_epoll ( "Adding epoll socket %d(type %d) ET: %u, IN: %u, OUT: %u\n",
                           socket->id, socket->socktype, socket->epoll & NTY_EPOLLET,
                           socket->epoll & NTY_EPOLLIN, socket->epoll & NTY_EPOLLOUT );
 
         if ( socket->socktype == NTY_TCP_SOCK_STREAM )
         {
-            nty_raise_pending_stream_events ( ep, socket );
+            dk_raise_pending_stream_events ( ep, socket );
         }
         else if ( socket->socktype == NTY_TCP_SOCK_PIPE )
         {
-            //nty_raise_pending_stream_events(struct nty_epoll * ep,nty_socket_map * socket)
+            //dk_raise_pending_stream_events(struct dk_epoll * ep,dk_socket_map * socket)
         }
     }
     else if ( op == NTY_EPOLL_CTL_MOD )
@@ -478,7 +478,7 @@ int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
 
         if ( socket->socktype == NTY_TCP_SOCK_STREAM )
         {
-            nty_raise_pending_stream_events ( ep, socket );
+            dk_raise_pending_stream_events ( ep, socket );
         }
         else if ( socket->socktype == NTY_TCP_SOCK_PIPE )
         {
@@ -498,10 +498,10 @@ int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event )
     return 0;
 }
 
-int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeout )
+int dk_epoll_wait ( int epid, dk_epoll_event* events, int maxevents, int timeout )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -509,7 +509,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
 
     if ( epid < 0 || epid >= NTY_MAX_CONCURRENCY )
     {
-        nty_trace_epoll ( "Epoll id %d out of range.\n", epid );
+        dk_trace_epoll ( "Epoll id %d out of range.\n", epid );
         errno = EBADF;
         return -1;
     }
@@ -525,7 +525,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
         return -1;
     }
 
-    nty_epoll* ep = tcp->smap[epid].ep;
+    dk_epoll* ep = tcp->smap[epid].ep;
     if ( !ep || !events || maxevents <= 0 )
     {
         errno = EINVAL;
@@ -537,7 +537,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
     {
         if ( errno == EDEADLK )
         {
-            nty_trace_epoll ( "nty_epoll_wait: epoll_lock blocked\n" );
+            dk_trace_epoll ( "dk_epoll_wait: epoll_lock blocked\n" );
         }
         assert ( 0 );
     }
@@ -545,8 +545,8 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
     int cnt = 0;
     do
     {
-        nty_event_queue* eq = ep->usr_queue;
-        nty_event_queue* eq_shadow = ep->usr_shadow_queue;
+        dk_event_queue* eq = ep->usr_queue;
+        dk_event_queue* eq_shadow = ep->usr_shadow_queue;
 
         while ( eq->num_events == 0 && eq_shadow->num_events == 0 && timeout != 0 )
         {
@@ -576,7 +576,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
                 if ( ret && ret != ETIMEDOUT )
                 {
                     pthread_mutex_unlock ( &ep->epoll_lock );
-                    nty_trace_epoll ( "pthread_cond_timedwait failed. ret: %d, error: %s\n",
+                    dk_trace_epoll ( "pthread_cond_timedwait failed. ret: %d, error: %s\n",
                                       ret, strerror ( errno ) );
                     return -1;
                 }
@@ -584,12 +584,12 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
             }
             else if ( timeout < 0 )
             {
-                nty_trace_epoll ( "[%s:%s:%d]: pthread_cond_wait\n", __FILE__, __func__, __LINE__ );
+                dk_trace_epoll ( "[%s:%s:%d]: pthread_cond_wait\n", __FILE__, __func__, __LINE__ );
                 int ret = pthread_cond_wait ( &ep->epoll_cond, &ep->epoll_lock );
                 if ( ret )
                 {
                     pthread_mutex_unlock ( &ep->epoll_lock );
-                    nty_trace_epoll ( "pthread_cond_wait failed. ret: %d, error: %s\n",
+                    dk_trace_epoll ( "pthread_cond_wait failed. ret: %d, error: %s\n",
                                       ret, strerror ( errno ) );
                     return -1;
                 }
@@ -609,7 +609,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
         int num_events = eq->num_events;
         for ( i = 0; i < num_events && cnt < maxevents; i ++ )
         {
-            nty_socket_map* event_socket = &tcp->smap[eq->events[eq->start].sockid];
+            dk_socket_map* event_socket = &tcp->smap[eq->events[eq->start].sockid];
             validity = 1;
             if ( event_socket->socktype == NTY_TCP_SOCK_UNUSED )
             {
@@ -629,7 +629,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
                 events[cnt++] = eq->events[eq->start].ev;
                 assert ( eq->events[eq->start].sockid >= 0 );
 
-                nty_trace_epoll ( "Socket %d: Handled event. event: %s, "
+                dk_trace_epoll ( "Socket %d: Handled event. event: %s, "
                                   "start: %u, end: %u, num: %u\n",
                                   event_socket->id,
                                   EventToString ( eq->events[eq->start].ev.events ),
@@ -639,7 +639,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
             }
             else
             {
-                nty_trace_epoll ( "Socket %d: event %s invalidated.\n",
+                dk_trace_epoll ( "Socket %d: event %s invalidated.\n",
                                   eq->events[eq->start].sockid,
                                   EventToString ( eq->events[eq->start].ev.events ) );
                 ep->stat.invalidated ++;
@@ -659,7 +659,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
         num_events = eq->num_events;
         for ( i = 0; i < num_events && cnt < maxevents; i++ )
         {
-            nty_socket_map* event_socket = &tcp->smap[eq->events[eq->start].sockid];
+            dk_socket_map* event_socket = &tcp->smap[eq->events[eq->start].sockid];
             validity = 1;
             if ( event_socket->socktype == NTY_TCP_SOCK_UNUSED )
             {
@@ -679,7 +679,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
                 events[cnt++] = eq->events[eq->start].ev;
                 assert ( eq->events[eq->start].sockid >= 0 );
 
-                nty_trace_epoll ( "Socket %d: Handled event. event: %s, "
+                dk_trace_epoll ( "Socket %d: Handled event. event: %s, "
                                   "start: %u, end: %u, num: %u\n",
                                   event_socket->id,
                                   EventToString ( eq->events[eq->start].ev.events ),
@@ -688,7 +688,7 @@ int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeo
             }
             else
             {
-                nty_trace_epoll ( "Socket %d: event %s invalidated.\n",
+                dk_trace_epoll ( "Socket %d: event %s invalidated.\n",
                                   eq->events[eq->start].sockid,
                                   EventToString ( eq->events[eq->start].ev.events ) );
                 ep->stat.invalidated++;

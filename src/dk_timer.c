@@ -33,12 +33,12 @@
 #include "dk_tcp.h"
 
 
-extern void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream );
+extern void DestroyTcpStream ( dk_tcp_manager* tcp, dk_tcp_stream* stream );
 
-nty_rto_hashstore* InitRTOHashstore ( void )
+dk_rto_hashstore* InitRTOHashstore ( void )
 {
 
-    nty_rto_hashstore* hs = calloc ( 1, sizeof ( nty_rto_hashstore ) );
+    dk_rto_hashstore* hs = calloc ( 1, sizeof ( dk_rto_hashstore ) );
     if ( !hs )
     {
         return NULL;
@@ -53,7 +53,7 @@ nty_rto_hashstore* InitRTOHashstore ( void )
 }
 
 
-void AddtoRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void AddtoRTOList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
 
     if ( !tcp->rto_list_cnt )
@@ -91,7 +91,7 @@ void AddtoRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
 }
 
 
-void RemoveFromRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void RemoveFromRTOList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
     if ( cur_stream->on_rto_idx < 0 )
     {
@@ -105,7 +105,7 @@ void RemoveFromRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     tcp->rto_list_cnt --;
 }
 
-void AddtoTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint32_t cur_ts )
+void AddtoTimewaitList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream, uint32_t cur_ts )
 {
     cur_stream->rcv->ts_tw_expire = cur_ts + NTY_TCP_TIMEWAIT;
 
@@ -119,7 +119,7 @@ void AddtoTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint3
     {
         if ( cur_stream->on_rto_idx >= 0 )
         {
-            nty_trace_timer ( "Stream %u: cannot be in both "
+            dk_trace_timer ( "Stream %u: cannot be in both "
                               "timewait and rto list.\n", cur_stream->id );
             //assert(0);
             RemoveFromRTOList ( tcp, cur_stream );
@@ -131,7 +131,7 @@ void AddtoTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream, uint3
     }
 }
 
-void RemoveFromTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void RemoveFromTimewaitList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
     if ( !cur_stream->on_timewait_list )
     {
@@ -144,7 +144,7 @@ void RemoveFromTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     tcp->timewait_list_cnt--;
 }
 
-void AddtoTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void AddtoTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
     if ( cur_stream->on_timeout_list )
     {
@@ -157,7 +157,7 @@ void AddtoTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     tcp->timeout_list_cnt++;
 }
 
-void RemoveFromTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void RemoveFromTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
     if ( cur_stream->on_timeout_list )
     {
@@ -167,7 +167,7 @@ void RemoveFromTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     }
 }
 
-void UpdateTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
+void UpdateTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream )
 {
     if ( cur_stream->on_timeout_list )
     {
@@ -176,8 +176,8 @@ void UpdateTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream )
     }
 }
 
-void UpdateRetransmissionTimer ( nty_tcp_manager* tcp,
-                                 nty_tcp_stream* cur_stream, uint32_t cur_ts )
+void UpdateRetransmissionTimer ( dk_tcp_manager* tcp,
+                                 dk_tcp_stream* cur_stream, uint32_t cur_ts )
 {
     assert ( cur_stream->snd->rto > 0 );
     cur_stream->snd->nrtx = 0;
@@ -196,12 +196,12 @@ void UpdateRetransmissionTimer ( nty_tcp_manager* tcp,
     }
     else
     {
-        nty_trace_timer ( "All packets are acked. snd_una: %u, snd_nxt: %u\n",
+        dk_trace_timer ( "All packets are acked. snd_una: %u, snd_nxt: %u\n",
                           cur_stream->snd->snd_una, cur_stream->snd_nxt );
     }
 }
 
-int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_stream )
+int HandleRTO ( dk_tcp_manager* tcp, uint32_t cur_ts, dk_tcp_stream* cur_stream )
 {
 
     uint8_t backoff;
@@ -267,7 +267,7 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
     }
     cur_stream->snd->cwnd = cur_stream->snd->mss;
 
-    nty_trace_timer ( "Stream %d Timeout. cwnd: %u, ssthresh: %u\n",
+    dk_trace_timer ( "Stream %d Timeout. cwnd: %u, ssthresh: %u\n",
                       cur_stream->id, cur_stream->snd->cwnd, cur_stream->snd->ssthresh );
 
     if ( cur_stream->state == NTY_TCP_SYN_SENT )
@@ -277,7 +277,7 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
         {
             cur_stream->state = NTY_TCP_CLOSED;
             cur_stream->close_reason = TCP_CONN_FAIL;
-            nty_trace_timer ( "Stream %d: SYN retries exceed maximum retries.\n",
+            dk_trace_timer ( "Stream %d: SYN retries exceed maximum retries.\n",
                               cur_stream->id );
             if ( cur_stream->socket )
             {
@@ -290,33 +290,33 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
 
             return -1;
         }
-        nty_trace_timer ( "Stream %d Retransmit SYN. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d Retransmit SYN. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
 
     }
     else if ( cur_stream->state == NTY_TCP_SYN_RCVD )
     {
-        nty_trace_timer ( "Stream %d: Retransmit SYN/ACK. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d: Retransmit SYN/ACK. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
     }
     else if ( cur_stream->state == NTY_TCP_ESTABLISHED )
     {
         /* Data lost */
-        nty_trace_timer ( "Stream %d: Retransmit data. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d: Retransmit data. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
 
     }
     else if ( cur_stream->state == NTY_TCP_CLOSE_WAIT )
     {
         /* Data lost */
-        nty_trace_timer ( "Stream %d: Retransmit data. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d: Retransmit data. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
 
     }
     else if ( cur_stream->state == NTY_TCP_LAST_ACK )
     {
         /* FIN/ACK lost */
-        nty_trace_timer ( "Stream %d: Retransmit FIN/ACK. "
+        dk_trace_timer ( "Stream %d: Retransmit FIN/ACK. "
                           "snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
 
@@ -324,19 +324,19 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
     else if ( cur_stream->state == NTY_TCP_FIN_WAIT_1 )
     {
         /* FIN lost */
-        nty_trace_timer ( "Stream %d: Retransmit FIN. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d: Retransmit FIN. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
     }
     else if ( cur_stream->state == NTY_TCP_CLOSING )
     {
-        nty_trace_timer ( "Stream %d: Retransmit ACK. snd_nxt: %u, snd_una: %u\n",
+        dk_trace_timer ( "Stream %d: Retransmit ACK. snd_nxt: %u, snd_una: %u\n",
                           cur_stream->id, cur_stream->snd_nxt, cur_stream->snd->snd_una );
         //TRACE_DBG("Stream %d: Retransmitting at CLOSING\n", cur_stream->id);
 
     }
     else
     {
-        nty_trace_timer ( "Stream %d: not implemented state! state: %d, rto: %u\n",
+        dk_trace_timer ( "Stream %d: not implemented state! state: %d, rto: %u\n",
                           cur_stream->id,
                           cur_stream->state, cur_stream->snd->rto );
         assert ( 0 );
@@ -348,7 +348,7 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
             cur_stream->state == NTY_TCP_CLOSE_WAIT )
     {
 
-        nty_tcp_addto_sendlist ( tcp, cur_stream );
+        dk_tcp_addto_sendlist ( tcp, cur_stream );
 
     }
     else if ( cur_stream->state == NTY_TCP_FIN_WAIT_1 ||
@@ -358,7 +358,7 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
 
         if ( cur_stream->snd->fss == 0 )
         {
-            nty_trace_timer ( "Stream %u: fss not set.\n", cur_stream->id );
+            dk_trace_timer ( "Stream %u: fss not set.\n", cur_stream->id );
         }
 
         if ( TCP_SEQ_LT ( cur_stream->snd_nxt, cur_stream->snd->fss ) )
@@ -366,31 +366,31 @@ int HandleRTO ( nty_tcp_manager* tcp, uint32_t cur_ts, nty_tcp_stream* cur_strea
 
             if ( cur_stream->snd->on_control_list )
             {
-                nty_tcp_remove_controllist ( tcp, cur_stream );
+                dk_tcp_remove_controllist ( tcp, cur_stream );
             }
             cur_stream->control_list_waiting = 1;
-            nty_tcp_addto_sendlist ( tcp, cur_stream );
+            dk_tcp_addto_sendlist ( tcp, cur_stream );
 
         }
         else
         {
 
-            nty_tcp_addto_controllist ( tcp, cur_stream );
+            dk_tcp_addto_controllist ( tcp, cur_stream );
         }
 
     }
     else
     {
-        nty_tcp_addto_controllist ( tcp, cur_stream );
+        dk_tcp_addto_controllist ( tcp, cur_stream );
     }
 
     return 0;
 }
 
 
-static inline void RearrangeRTOStore ( nty_tcp_manager* tcp )
+static inline void RearrangeRTOStore ( dk_tcp_manager* tcp )
 {
-    nty_tcp_stream* walk, *next;
+    dk_tcp_stream* walk, *next;
     struct rto_head* rto_list = &tcp->rto_store->rto_list[RTO_HASH];
     int cnt = 0;
 
@@ -414,10 +414,10 @@ static inline void RearrangeRTOStore ( nty_tcp_manager* tcp )
 }
 
 
-void CheckRtmTimeout ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
+void CheckRtmTimeout ( dk_tcp_manager* tcp, uint32_t cur_ts, int thresh )
 {
 
-    nty_tcp_stream* walk, *next;
+    dk_tcp_stream* walk, *next;
     struct rto_head* rto_list;
 
     if ( !tcp->rto_list_cnt )
@@ -456,7 +456,7 @@ void CheckRtmTimeout ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
             }
             else
             {
-                nty_trace_timer ( "Stream %d: not on rto list.\n", walk->id );
+                dk_trace_timer ( "Stream %d: not on rto list.\n", walk->id );
             }
         }
 
@@ -477,9 +477,9 @@ void CheckRtmTimeout ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
 
 }
 
-void CheckTimewaitExpire ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
+void CheckTimewaitExpire ( dk_tcp_manager* tcp, uint32_t cur_ts, int thresh )
 {
-    nty_tcp_stream* walk, *next;
+    dk_tcp_stream* walk, *next;
     int cnt;
 
     cnt = 0;
@@ -506,7 +506,7 @@ void CheckTimewaitExpire ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
 
                     walk->state = NTY_TCP_CLOSED;
                     walk->close_reason = TCP_ACTIVE_CLOSE;
-                    nty_trace_timer ( "Stream %d: TCP_ST_CLOSED\n", walk->id );
+                    dk_trace_timer ( "Stream %d: TCP_ST_CLOSED\n", walk->id );
                     DestroyTcpStream ( tcp, walk );
                 }
             }
@@ -517,15 +517,15 @@ void CheckTimewaitExpire ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
         }
         else
         {
-            nty_trace_timer ( "Stream %d: not on timewait list.\n", walk->id );
+            dk_trace_timer ( "Stream %d: not on timewait list.\n", walk->id );
         }
     }
 
 }
 /*----------------------------------------------------------------------------*/
-void CheckConnectionTimeout ( nty_tcp_manager* tcp, uint32_t cur_ts, int thresh )
+void CheckConnectionTimeout ( dk_tcp_manager* tcp, uint32_t cur_ts, int thresh )
 {
-    nty_tcp_stream* walk, *next;
+    dk_tcp_stream* walk, *next;
     int cnt;
 
     cnt = 0;

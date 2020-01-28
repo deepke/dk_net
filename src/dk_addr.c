@@ -31,23 +31,23 @@
 
 #include <pthread.h>
 
-nty_addr_pool* CreateAddressPool ( in_addr_t addr_base, int num_addr )
+dk_addr_pool* CreateAddressPool ( in_addr_t addr_base, int num_addr )
 {
-    nty_addr_pool* ap;
+    dk_addr_pool* ap;
     int num_entry;
     int i, j, cnt;
     in_addr_t addr;
     uint32_t addr_h;
 
-    ap = ( nty_addr_pool* ) calloc ( 1, sizeof ( nty_addr_pool ) );
+    ap = ( dk_addr_pool* ) calloc ( 1, sizeof ( dk_addr_pool ) );
     if ( !ap )
     {
         return NULL;
     }
 
     /* initialize address pool */
-    num_entry = num_addr * ( NTY_MAX_PORT - NTY_MIN_PORT );
-    ap->pool = ( nty_addr_entry* ) calloc ( num_entry, sizeof ( nty_addr_entry ) );
+    num_entry = num_addr * ( DK_MAX_PORT - DK_MIN_PORT );
+    ap->pool = ( dk_addr_entry* ) calloc ( num_entry, sizeof ( dk_addr_entry ) );
     if ( !ap->pool )
     {
         free ( ap );
@@ -55,7 +55,7 @@ nty_addr_pool* CreateAddressPool ( in_addr_t addr_base, int num_addr )
     }
 
     /* initialize address map */
-    ap->mapper = ( nty_addr_map* ) calloc ( num_addr, sizeof ( nty_addr_map ) );
+    ap->mapper = ( dk_addr_map* ) calloc ( num_addr, sizeof ( dk_addr_map ) );
     if ( !ap->mapper )
     {
         free ( ap->pool );
@@ -83,7 +83,7 @@ nty_addr_pool* CreateAddressPool ( in_addr_t addr_base, int num_addr )
     {
         addr_h = ap->addr_base + i;
         addr = htonl ( addr_h );
-        for ( j = NTY_MIN_PORT; j < NTY_MAX_PORT; j++ )
+        for ( j = DK_MIN_PORT; j < DK_MAX_PORT; j++ )
         {
             ap->pool[cnt].addr.sin_addr.s_addr = addr;
             ap->pool[cnt].addr.sin_port = htons ( j );
@@ -107,10 +107,10 @@ nty_addr_pool* CreateAddressPool ( in_addr_t addr_base, int num_addr )
 }
 
 
-nty_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
+dk_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
                                           in_addr_t saddr_base, int num_addr, in_addr_t daddr, in_port_t dport )
 {
-    nty_addr_pool* ap;
+    dk_addr_pool* ap;
     int num_entry;
     int i, j, cnt;
     in_addr_t saddr;
@@ -124,7 +124,7 @@ nty_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
     uint8_t endian_check = 1;
 #endif
 
-    ap = ( nty_addr_pool* ) calloc ( 1, sizeof ( nty_addr_pool ) );
+    ap = ( dk_addr_pool* ) calloc ( 1, sizeof ( dk_addr_pool ) );
     if ( !ap )
     {
         return NULL;
@@ -132,7 +132,7 @@ nty_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
 
     /* initialize address pool */
     num_entry = ( num_addr * ( NTY_MAX_PORT - NTY_MIN_PORT ) ) / num_queues;
-    ap->pool = ( nty_addr_entry* ) calloc ( num_entry, sizeof ( nty_addr_entry ) );
+    ap->pool = ( dk_addr_entry* ) calloc ( num_entry, sizeof ( dk_addr_entry ) );
     if ( !ap->pool )
     {
         free ( ap );
@@ -140,7 +140,7 @@ nty_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
     }
 
     /* initialize address map */
-    ap->mapper = ( nty_addr_map* ) calloc ( num_addr, sizeof ( nty_addr_map ) );
+    ap->mapper = ( dk_addr_map* ) calloc ( num_addr, sizeof ( dk_addr_map ) );
     if ( !ap->mapper )
     {
         free ( ap->pool );
@@ -211,7 +211,7 @@ nty_addr_pool* CreateAddressPoolPerCore ( int core, int num_queues,
     return ap;
 }
 
-void DestroyAddressPool ( nty_addr_pool* ap )
+void DestroyAddressPool ( dk_addr_pool* ap )
 {
     if ( !ap )
     {
@@ -235,10 +235,10 @@ void DestroyAddressPool ( nty_addr_pool* ap )
     free ( ap );
 }
 
-int FetchAddress ( nty_addr_pool* ap, int core, int num_queues,
+int FetchAddress ( dk_addr_pool* ap, int core, int num_queues,
                    const struct sockaddr_in* daddr, struct sockaddr_in* saddr )
 {
-    nty_addr_entry* walk, *next;
+    dk_addr_entry* walk, *next;
     int rss_core;
     int ret = -1;
 #if 0
@@ -301,10 +301,10 @@ int FetchAddress ( nty_addr_pool* ap, int core, int num_queues,
     return ret;
 }
 
-int FetchAddressPerCore ( nty_addr_pool* ap, int core, int num_queues,
+int FetchAddressPerCore ( dk_addr_pool* ap, int core, int num_queues,
                           const struct sockaddr_in* daddr, struct sockaddr_in* saddr )
 {
-    nty_addr_entry* walk;
+    dk_addr_entry* walk;
     int ret = -1;
 
     if ( !ap || !daddr || !saddr )
@@ -331,9 +331,9 @@ int FetchAddressPerCore ( nty_addr_pool* ap, int core, int num_queues,
     return ret;
 }
 
-int FreeAddress ( nty_addr_pool* ap, const struct sockaddr_in* addr )
+int FreeAddress ( dk_addr_pool* ap, const struct sockaddr_in* addr )
 {
-    nty_addr_entry* walk, *next;
+    dk_addr_entry* walk, *next;
     int ret = -1;
 
     if ( !ap || !addr )

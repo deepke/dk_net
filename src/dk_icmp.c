@@ -32,7 +32,7 @@
 
 extern unsigned short in_cksum ( unsigned short* addr, int len );
 
-void nty_icmp_pkt ( struct icmppkt* icmp, struct icmppkt* icmp_rt )
+void dk_icmp_pkt ( struct icmppkt* icmp, struct icmppkt* icmp_rt )
 {
 
     memcpy ( icmp_rt, icmp, sizeof ( struct icmppkt ) );
@@ -51,7 +51,7 @@ void nty_icmp_pkt ( struct icmppkt* icmp, struct icmppkt* icmp_rt )
 
 }
 
-int nty_icmp_process ( nty_nic_context* ctx, unsigned char* stream )
+int dk_icmp_process ( dk_nic_context* ctx, unsigned char* stream )
 {
 
     struct icmppkt* icmph = ( struct icmppkt* ) stream;
@@ -61,8 +61,8 @@ int nty_icmp_process ( nty_nic_context* ctx, unsigned char* stream )
         struct icmppkt icmp_rt;
         memset ( &icmp_rt, 0, sizeof ( struct icmppkt ) );
 
-        nty_icmp_pkt ( icmph, &icmp_rt );
-        nty_nic_write ( ctx, &icmp_rt, sizeof ( struct icmppkt ) );
+        dk_icmp_pkt ( icmph, &icmp_rt );
+        dk_nic_write ( ctx, &icmp_rt, sizeof ( struct icmppkt ) );
     }
     return 0;
 }

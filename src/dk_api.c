@@ -38,12 +38,12 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-extern nty_tcp_manager* nty_get_tcp_manager ( void );
+extern dk_tcp_manager* dk_get_tcp_manager ( void );
 
 #if 0
-static int nty_peek_for_user ( nty_tcp_stream* cur_stream, char* buf, int len )
+static int dk_peek_for_user ( dk_tcp_stream* cur_stream, char* buf, int len )
 {
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
 
     int copylen = MIN ( rcv->recvbuf->merged_len, len );
     if ( copylen <= 0 )
@@ -57,15 +57,15 @@ static int nty_peek_for_user ( nty_tcp_stream* cur_stream, char* buf, int len )
 }
 #endif
 
-static int nty_copy_to_user ( nty_tcp_stream* cur_stream, char* buf, int len )
+static int dk_copy_to_user ( dk_tcp_stream* cur_stream, char* buf, int len )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( tcp == NULL )
     {
         return -1;
     }
 
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
 
     int copylen = MIN ( rcv->recvbuf->merged_len, len );
     if ( copylen < 0 )
@@ -107,15 +107,15 @@ static int nty_copy_to_user ( nty_tcp_stream* cur_stream, char* buf, int len )
     return copylen;
 }
 
-static int nty_copy_from_user ( nty_tcp_stream* cur_stream, const char* buf, int len )
+static int dk_copy_from_user ( dk_tcp_stream* cur_stream, const char* buf, int len )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( tcp == NULL )
     {
         return -1;
     }
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     int sndlen = MIN ( ( int ) snd->snd_wnd, len );
     if ( sndlen <= 0 )
@@ -139,7 +139,7 @@ static int nty_copy_from_user ( nty_tcp_stream* cur_stream, const char* buf, int
     assert ( ret == sndlen );
     if ( ret <= 0 )
     {
-        nty_trace_api ( "SBPut failed. reason: %d (sndlen: %u, len: %u\n",
+        dk_trace_api ( "SBPut failed. reason: %d (sndlen: %u, len: %u\n",
                         ret, sndlen, snd->sndbuf->len );
         errno = EAGAIN;
         return -1;
@@ -148,38 +148,38 @@ static int nty_copy_from_user ( nty_tcp_stream* cur_stream, const char* buf, int
     snd->snd_wnd = snd->sndbuf->size - snd->sndbuf->len;
     if ( snd->snd_wnd <= 0 )
     {
-        nty_trace_api ( "%u Sending buffer became full!! snd_wnd: %u\n",
+        dk_trace_api ( "%u Sending buffer became full!! snd_wnd: %u\n",
                         cur_stream->id, snd->snd_wnd );
     }
 
     return ret;
 }
 
-static int nty_close_stream_socket ( int sockid )
+static int dk_close_stream_socket ( int sockid )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    nty_tcp_stream* cur_stream = tcp->smap[sockid].stream;
+    dk_tcp_stream* cur_stream = tcp->smap[sockid].stream;
     if ( !cur_stream )
     {
-        nty_trace_api ( "Socket %d: stream does not exist.\n", sockid );
+        dk_trace_api ( "Socket %d: stream does not exist.\n", sockid );
         errno = ENOTCONN;
         return -1;
     }
 
     if ( cur_stream->closed )
     {
-        nty_trace_api ( "Socket %d (Stream %u): already closed stream\n",
+        dk_trace_api ( "Socket %d (Stream %u): already closed stream\n",
                         sockid, cur_stream->id );
         return 0;
     }
     cur_stream->closed = 1;
 
-    nty_trace_api ( "Stream %d: closing the stream.\n", cur_stream->id );
+    dk_trace_api ( "Stream %d: closing the stream.\n", cur_stream->id );
     cur_stream->socket = NULL;
 
     if ( cur_stream->state == NTY_TCP_CLOSED )
@@ -203,7 +203,7 @@ static int nty_close_stream_socket ( int sockid )
     else if ( cur_stream->state != NTY_TCP_ESTABLISHED &&
               cur_stream->state != NTY_TCP_CLOSE_WAIT )
     {
-        nty_trace_api ( "Stream %d at state %d\n",
+        dk_trace_api ( "Stream %d at state %d\n",
                         cur_stream->id, cur_stream->state );
         errno = EBADF;
         return -1;
@@ -215,7 +215,7 @@ static int nty_close_stream_socket ( int sockid )
 
     if ( ret < 0 )
     {
-        nty_trace_api ( "(NEVER HAPPEN) Failed to enqueue the stream to close.\n" );
+        dk_trace_api ( "(NEVER HAPPEN) Failed to enqueue the stream to close.\n" );
         errno = EAGAIN;
         return -1;
     }
@@ -223,16 +223,16 @@ static int nty_close_stream_socket ( int sockid )
     return 0;
 }
 
-static int nty_close_listening_socket ( int sockid )
+static int dk_close_listening_socket ( int sockid )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    struct _nty_tcp_listener* listener = tcp->smap[sockid].listener;
+    struct _dk_tcp_listener* listener = tcp->smap[sockid].listener;
     if ( !listener )
     {
         errno = EINVAL;
@@ -259,7 +259,7 @@ static int nty_close_listening_socket ( int sockid )
 }
 
 
-int nty_socket ( int domain, int type, int protocol )
+int dk_socket ( int domain, int type, int protocol )
 {
 
 
@@ -278,7 +278,7 @@ int nty_socket ( int domain, int type, int protocol )
         return -1;
     }
 
-    nty_socket_map* socket = nty_allocate_socket ( type, 0 );
+    dk_socket_map* socket = dk_allocate_socket ( type, 0 );
     if ( !socket )
     {
         errno = ENFILE;
@@ -288,10 +288,10 @@ int nty_socket ( int domain, int type, int protocol )
     return socket->id;
 }
 
-int nty_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
+int dk_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -305,7 +305,7 @@ int nty_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 
     if ( tcp->smap[sockid].socktype == NTY_TCP_SOCK_UNUSED )
     {
-        nty_trace_api ( "Invalid socket id: %d\n", sockid );
+        dk_trace_api ( "Invalid socket id: %d\n", sockid );
         errno = EBADF;
         return -1;
     }
@@ -313,28 +313,28 @@ int nty_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
     if ( tcp->smap[sockid].socktype != NTY_TCP_SOCK_STREAM &&
             tcp->smap[sockid].socktype != NTY_TCP_SOCK_LISTENER )
     {
-        nty_trace_api ( "Not a stream socket id: %d\n", sockid );
+        dk_trace_api ( "Not a stream socket id: %d\n", sockid );
         errno = ENOTSOCK;
         return -1;
     }
 
     if ( !addr )
     {
-        nty_trace_api ( "Socket %d: empty address!\n", sockid );
+        dk_trace_api ( "Socket %d: empty address!\n", sockid );
         errno = EINVAL;
         return -1;
     }
 
     if ( tcp->smap[sockid].opts & NTY_TCP_ADDR_BIND )
     {
-        nty_trace_api ( "Socket %d: adress already bind for this socket.\n", sockid );
+        dk_trace_api ( "Socket %d: adress already bind for this socket.\n", sockid );
         errno = EINVAL;
         return -1;
     }
 
     if ( addr->sa_family != AF_INET || addrlen < sizeof ( struct sockaddr_in ) )
     {
-        nty_trace_api ( "Socket %d: invalid argument!\n", sockid );
+        dk_trace_api ( "Socket %d: invalid argument!\n", sockid );
         errno = EINVAL;
         return -1;
     }
@@ -346,9 +346,9 @@ int nty_bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
     return 0;
 }
 
-int nty_listen ( int sockid, int backlog )
+int dk_listen ( int sockid, int backlog )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -361,7 +361,7 @@ int nty_listen ( int sockid, int backlog )
     }
     if ( tcp->smap[sockid].socktype == NTY_TCP_SOCK_UNUSED )
     {
-        nty_trace_api ( "Socket %d: invalid argument!\n", sockid );
+        dk_trace_api ( "Socket %d: invalid argument!\n", sockid );
         errno = EBADF;
         return -1;
     }
@@ -371,7 +371,7 @@ int nty_listen ( int sockid, int backlog )
     }
     if ( tcp->smap[sockid].socktype != NTY_TCP_SOCK_LISTENER )
     {
-        nty_trace_api ( "Not a listening socket. id: %d\n", sockid );
+        dk_trace_api ( "Not a listening socket. id: %d\n", sockid );
         errno = ENOTSOCK;
         return -1;
     }
@@ -382,7 +382,7 @@ int nty_listen ( int sockid, int backlog )
         return -1;
     }
 
-    nty_tcp_listener* listener = ( nty_tcp_listener* ) calloc ( 1, sizeof ( nty_tcp_listener ) );
+    dk_tcp_listener* listener = ( dk_tcp_listener* ) calloc ( 1, sizeof ( dk_tcp_listener ) );
     if ( !listener )
     {
         return -1;
@@ -394,14 +394,14 @@ int nty_listen ( int sockid, int backlog )
 
     if ( pthread_cond_init ( &listener->accept_cond, NULL ) )
     {
-        nty_trace_api ( "pthread_cond_init of ctx->accept_cond\n" );
+        dk_trace_api ( "pthread_cond_init of ctx->accept_cond\n" );
         free ( listener );
         return -1;
     }
 
     if ( pthread_mutex_init ( &listener->accept_lock, NULL ) )
     {
-        nty_trace_api ( "pthread_mutex_init of ctx->accept_lock\n" );
+        dk_trace_api ( "pthread_mutex_init of ctx->accept_lock\n" );
         free ( listener );
         return -1;
     }
@@ -420,10 +420,10 @@ int nty_listen ( int sockid, int backlog )
     return 0;
 }
 
-int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
+int dk_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -441,8 +441,8 @@ int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         return -1;
     }
 
-    nty_tcp_listener* listener = tcp->smap[sockid].listener;
-    nty_tcp_stream* accepted = StreamDequeue ( listener->acceptq );
+    dk_tcp_listener* listener = tcp->smap[sockid].listener;
+    dk_tcp_stream* accepted = StreamDequeue ( listener->acceptq );
     if ( !accepted )
     {
         if ( listener->socket->opts & NTY_TCP_NONBLOCK )
@@ -469,13 +469,13 @@ int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         }
     }
 
-    nty_socket_map* socket = NULL;
+    dk_socket_map* socket = NULL;
     if ( !accepted->socket )
     {
-        socket = nty_allocate_socket ( NTY_TCP_SOCK_STREAM, 0 );
+        socket = dk_allocate_socket ( NTY_TCP_SOCK_STREAM, 0 );
         if ( !socket )
         {
-            nty_trace_api ( "Failed to create new socket!\n" );
+            dk_trace_api ( "Failed to create new socket!\n" );
             /* TODO: destroy the stream */
             errno = ENFILE;
             return -1;
@@ -491,9 +491,9 @@ int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
     if ( ! ( listener->socket->epoll & NTY_EPOLLET ) &&
             !StreamQueueIsEmpty ( listener->acceptq ) )
     {
-        nty_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, listener->socket, NTY_EPOLLIN );
+        dk_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, listener->socket, NTY_EPOLLIN );
     }
-    nty_trace_api ( "Stream %d accepted.\n", accepted->id );
+    dk_trace_api ( "Stream %d accepted.\n", accepted->id );
 
     if ( addr && addrlen )
     {
@@ -508,9 +508,9 @@ int nty_accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
 }
 
 
-ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
+ssize_t dk_recv ( int sockid, char* buf, size_t len, int flags )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -522,7 +522,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
         return -1;
     }
 
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_socket_map* socket = &tcp->smap[sockid];
     if ( socket->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = EINVAL;
@@ -536,7 +536,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
     }
 
     /* stream should be in ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT */
-    nty_tcp_stream* cur_stream = socket->stream;
+    dk_tcp_stream* cur_stream = socket->stream;
     if ( !cur_stream ||
             ! ( cur_stream->state == NTY_TCP_ESTABLISHED ||
                 cur_stream->state == NTY_TCP_CLOSE_WAIT ||
@@ -547,7 +547,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
         return -1;
     }
 
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
     if ( cur_stream->state == NTY_TCP_CLOSE_WAIT )
     {
         if ( !rcv->recvbuf )
@@ -604,7 +604,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
     {
         case 0:
         {
-            ret = nty_copy_to_user ( cur_stream, buf, len );
+            ret = dk_copy_to_user ( cur_stream, buf, len );
             break;
         }
         default:
@@ -638,7 +638,7 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
     {
         if ( socket->epoll )
         {
-            nty_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
+            dk_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLIN );
 #if NTY_ENABLE_BLOCKING
         }
         else if ( ! ( socket->opts & NTY_TCP_NONBLOCK ) )
@@ -653,13 +653,13 @@ ssize_t nty_recv ( int sockid, char* buf, size_t len, int flags )
 #endif
     }
 
-    nty_trace_api ( "Stream %d: mtcp_recv() returning %d\n", cur_stream->id, ret );
+    dk_trace_api ( "Stream %d: mtcp_recv() returning %d\n", cur_stream->id, ret );
     return ret;
 }
 
-ssize_t nty_send ( int sockid, const char* buf, size_t len )
+ssize_t dk_send ( int sockid, const char* buf, size_t len )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -671,7 +671,7 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
         return -1;
     }
 
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_socket_map* socket = &tcp->smap[sockid];
     if ( socket->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = EINVAL;
@@ -683,7 +683,7 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
         return -1;
     }
     /* stream should be in ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT */
-    nty_tcp_stream* cur_stream = socket->stream;
+    dk_tcp_stream* cur_stream = socket->stream;
     if ( !cur_stream ||
             ! ( cur_stream->state == NTY_TCP_ESTABLISHED ||
                 cur_stream->state == NTY_TCP_CLOSE_WAIT ) )
@@ -705,7 +705,7 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
         }
     }
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     pthread_mutex_lock ( &snd->write_lock );
 
@@ -725,10 +725,10 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
         }
     }
 #endif
-    int ret = nty_copy_from_user ( cur_stream, buf, len );
+    int ret = dk_copy_from_user ( cur_stream, buf, len );
     pthread_mutex_unlock ( &snd->write_lock );
 
-    nty_trace_api ( "nty_copy_from_user --> %d, %d\n",
+    dk_trace_api ( "dk_copy_from_user --> %d, %d\n",
                     snd->on_sendq, snd->on_send_list );
     if ( ret > 0 && ! ( snd->on_sendq || snd->on_send_list ) )
     {
@@ -747,7 +747,7 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
     {
         if ( ( socket->epoll & NTY_EPOLLOUT ) && ! ( socket->epoll & NTY_EPOLLET ) )
         {
-            nty_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
+            dk_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
 #if NTY_ENABLE_BLOCKING
         }
         else if ( ! ( socket->opts & NTY_TCP_NONBLOCK ) )
@@ -762,13 +762,13 @@ ssize_t nty_send ( int sockid, const char* buf, size_t len )
         }
     }
 
-    nty_trace_api ( "Stream %d: mtcp_write() returning %d\n", cur_stream->id, ret );
+    dk_trace_api ( "Stream %d: mtcp_write() returning %d\n", cur_stream->id, ret );
     return ret;
 }
 
-int nty_close ( int sockid )
+int dk_close ( int sockid )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -780,30 +780,30 @@ int nty_close ( int sockid )
         return -1;
     }
 
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_socket_map* socket = &tcp->smap[sockid];
     if ( socket->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = EINVAL;
         return -1;
     }
-    nty_trace_api ( "Socket %d: mtcp_close called.\n", sockid );
+    dk_trace_api ( "Socket %d: mtcp_close called.\n", sockid );
 
     int ret = -1;
     switch ( tcp->smap[sockid].socktype )
     {
         case NTY_TCP_SOCK_STREAM:
         {
-            ret = nty_close_stream_socket ( sockid );
+            ret = dk_close_stream_socket ( sockid );
             break;
         }
         case NTY_TCP_SOCK_LISTENER:
         {
-            ret = nty_close_listening_socket ( sockid );
+            ret = dk_close_listening_socket ( sockid );
             break;
         }
         case NTY_TCP_SOCK_EPOLL:
         {
-            ret = nty_close_epoll_socket ( sockid );
+            ret = dk_close_epoll_socket ( sockid );
             break;
         }
         default:
@@ -814,14 +814,14 @@ int nty_close ( int sockid )
         }
     }
 
-    nty_free_socket ( sockid, 0 );
+    dk_free_socket ( sockid, 0 );
     return ret;
 }
 
 #if 0
-int nty_connect ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
+int dk_connect ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
 
     if ( !tcp )
     {
@@ -860,7 +860,7 @@ int nty_connect ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
         return -1;
     }
 
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_socket_map* socket = &tcp->smap[sockid];
     if ( socket->stream )
     {
         printf ( "Socket %d: stream already exist!\n", sockid );
@@ -910,7 +910,7 @@ int socket ( int domain, int type, int protocol )
         return -1;
     }
 
-    struct _nty_socket* socket = nty_socket_allocate ( type );
+    struct _dk_socket* socket = dk_socket_allocate ( type );
     if ( !socket )
     {
         errno = ENFILE;
@@ -922,7 +922,7 @@ int socket ( int domain, int type, int protocol )
 
 int bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -940,8 +940,8 @@ int bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
         return -1;
     }
 
-    nty_trace_api ( " Enter Bind \n" );
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    dk_trace_api ( " Enter Bind \n" );
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
     if ( s == NULL )
     {
         errno = EBADF;
@@ -950,7 +950,7 @@ int bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 
     if ( s->socktype == NTY_TCP_SOCK_UNUSED )
     {
-        nty_trace_api ( "Invalid socket id: %d\n", sockid );
+        dk_trace_api ( "Invalid socket id: %d\n", sockid );
         errno = EBADF;
         return -1;
     }
@@ -958,28 +958,28 @@ int bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
     if ( s->socktype != NTY_TCP_SOCK_STREAM &&
             s->socktype != NTY_TCP_SOCK_LISTENER )
     {
-        nty_trace_api ( "Not a stream socket id: %d\n", sockid );
+        dk_trace_api ( "Not a stream socket id: %d\n", sockid );
         errno = ENOTSOCK;
         return -1;
     }
 
     if ( !addr )
     {
-        nty_trace_api ( "Socket %d: empty address!\n", sockid );
+        dk_trace_api ( "Socket %d: empty address!\n", sockid );
         errno = EINVAL;
         return -1;
     }
 
     if ( s->opts & NTY_TCP_ADDR_BIND )
     {
-        nty_trace_api ( "Socket %d: adress already bind for this socket.\n", sockid );
+        dk_trace_api ( "Socket %d: adress already bind for this socket.\n", sockid );
         errno = EINVAL;
         return -1;
     }
 
     if ( addr->sa_family != AF_INET || addrlen < sizeof ( struct sockaddr_in ) )
     {
-        nty_trace_api ( "Socket %d: invalid argument!\n", sockid );
+        dk_trace_api ( "Socket %d: invalid argument!\n", sockid );
         errno = EINVAL;
         return -1;
     }
@@ -994,7 +994,7 @@ int bind ( int sockid, const struct sockaddr* addr, socklen_t addrlen )
 
 int listen ( int sockid, int backlog )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -1011,18 +1011,18 @@ int listen ( int sockid, int backlog )
         errno = -EBADF;
         return -1;
     }
-    nty_trace_api ( " Enter listen\n" );
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    dk_trace_api ( " Enter listen\n" );
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
     if ( s == NULL )
     {
         errno = -EBADF;
         return -1;
     }
 
-    nty_trace_api ( " Enter listen 1111\n" );
+    dk_trace_api ( " Enter listen 1111\n" );
     if ( s->socktype == NTY_TCP_SOCK_UNUSED )
     {
-        nty_trace_api ( "Socket %d: invalid argument!\n", sockid );
+        dk_trace_api ( "Socket %d: invalid argument!\n", sockid );
         errno = -EBADF;
         return -1;
     }
@@ -1032,7 +1032,7 @@ int listen ( int sockid, int backlog )
     }
     if ( s->socktype != NTY_TCP_SOCK_LISTENER )
     {
-        nty_trace_api ( "Not a listening socket. id: %d\n", sockid );
+        dk_trace_api ( "Not a listening socket. id: %d\n", sockid );
         errno = -ENOTSOCK;
         return -1;
     }
@@ -1043,7 +1043,7 @@ int listen ( int sockid, int backlog )
         return -1;
     }
 
-    nty_tcp_listener* listener = ( nty_tcp_listener* ) calloc ( 1, sizeof ( nty_tcp_listener ) );
+    dk_tcp_listener* listener = ( dk_tcp_listener* ) calloc ( 1, sizeof ( dk_tcp_listener ) );
     if ( !listener )
     {
         return -1;
@@ -1055,14 +1055,14 @@ int listen ( int sockid, int backlog )
 
     if ( pthread_cond_init ( &listener->accept_cond, NULL ) )
     {
-        nty_trace_api ( "pthread_cond_init of ctx->accept_cond\n" );
+        dk_trace_api ( "pthread_cond_init of ctx->accept_cond\n" );
         free ( listener );
         return -1;
     }
 
     if ( pthread_mutex_init ( &listener->accept_lock, NULL ) )
     {
-        nty_trace_api ( "pthread_mutex_init of ctx->accept_lock\n" );
+        dk_trace_api ( "pthread_mutex_init of ctx->accept_lock\n" );
         free ( listener );
         return -1;
     }
@@ -1076,18 +1076,18 @@ int listen ( int sockid, int backlog )
     }
     listener->sockid = sockid;
 
-    nty_trace_api ( " CreateStreamQueue \n" );
+    dk_trace_api ( " CreateStreamQueue \n" );
     s->listener = listener;
     ListenerHTInsert ( tcp->listeners, listener );
 
-    nty_trace_api ( " ListenerHTInsert \n" );
+    dk_trace_api ( " ListenerHTInsert \n" );
     return 0;
 }
 
 int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -1104,7 +1104,7 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         errno = -EBADF;
         return -1;
     }
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
 
     if ( s == NULL )
     {
@@ -1118,8 +1118,8 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         return -1;
     }
 
-    nty_tcp_listener* listener = s->listener;
-    nty_tcp_stream* accepted = StreamDequeue ( listener->acceptq );
+    dk_tcp_listener* listener = s->listener;
+    dk_tcp_stream* accepted = StreamDequeue ( listener->acceptq );
     if ( !accepted )
     {
         if ( listener->s->opts & NTY_TCP_NONBLOCK )
@@ -1129,7 +1129,7 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         }
         else
         {
-            nty_trace_api ( " Enter accept :%d, sockid:%d\n", s->id, sockid );
+            dk_trace_api ( " Enter accept :%d, sockid:%d\n", s->id, sockid );
             pthread_mutex_lock ( &listener->accept_lock );
             while ( accepted == NULL && ( ( accepted = StreamDequeue ( listener->acceptq ) ) == NULL ) )
             {
@@ -1147,13 +1147,13 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         }
     }
 
-    struct _nty_socket* socket = NULL;
+    struct _dk_socket* socket = NULL;
     if ( !accepted->s )
     {
-        socket = nty_socket_allocate ( NTY_TCP_SOCK_STREAM );
+        socket = dk_socket_allocate ( NTY_TCP_SOCK_STREAM );
         if ( !socket )
         {
-            nty_trace_api ( "Failed to create new socket!\n" );
+            dk_trace_api ( "Failed to create new socket!\n" );
             /* TODO: destroy the stream */
             errno = -ENFILE;
             return -1;
@@ -1167,7 +1167,7 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
         socket->s_addr.sin_addr.s_addr = accepted->daddr;
     }
 
-    nty_trace_api ( "Stream %d accepted.\n", accepted->id );
+    dk_trace_api ( "Stream %d accepted.\n", accepted->id );
 
     if ( addr && addrlen )
     {
@@ -1184,7 +1184,7 @@ int accept ( int sockid, struct sockaddr* addr, socklen_t* addrlen )
 
 ssize_t recv ( int sockid, void* buf, size_t len, int flags )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -1201,7 +1201,7 @@ ssize_t recv ( int sockid, void* buf, size_t len, int flags )
         errno = EBADF;
         return -1;
     }
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
     if ( s == NULL )
     {
         errno = EBADF;
@@ -1220,7 +1220,7 @@ ssize_t recv ( int sockid, void* buf, size_t len, int flags )
     }
 
     /* stream should be in ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT */
-    nty_tcp_stream* cur_stream = s->stream;
+    dk_tcp_stream* cur_stream = s->stream;
     if ( !cur_stream ||
             ! ( cur_stream->state == NTY_TCP_ESTABLISHED ||
                 cur_stream->state == NTY_TCP_CLOSE_WAIT ||
@@ -1231,7 +1231,7 @@ ssize_t recv ( int sockid, void* buf, size_t len, int flags )
         return -1;
     }
 
-    nty_tcp_recv* rcv = cur_stream->rcv;
+    dk_tcp_recv* rcv = cur_stream->rcv;
     if ( cur_stream->state == NTY_TCP_CLOSE_WAIT )
     {
         if ( !rcv->recvbuf )
@@ -1288,7 +1288,7 @@ ssize_t recv ( int sockid, void* buf, size_t len, int flags )
     {
         case 0:
         {
-            ret = nty_copy_to_user ( cur_stream, buf, len );
+            ret = dk_copy_to_user ( cur_stream, buf, len );
             break;
         }
         default:
@@ -1318,14 +1318,14 @@ ssize_t recv ( int sockid, void* buf, size_t len, int flags )
 
     pthread_mutex_unlock ( &rcv->read_lock );
 
-    nty_trace_api ( "Stream %d: mtcp_recv() returning %d\n", cur_stream->id, ret );
+    dk_trace_api ( "Stream %d: mtcp_recv() returning %d\n", cur_stream->id, ret );
 
     return ret;
 }
 
 ssize_t send ( int sockid, const void* buf, size_t len, int flags )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -1342,7 +1342,7 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
         errno = EBADF;
         return -1;
     }
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
     if ( s->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = EINVAL;
@@ -1354,7 +1354,7 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
         return -1;
     }
     /* stream should be in ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT */
-    nty_tcp_stream* cur_stream = s->stream;
+    dk_tcp_stream* cur_stream = s->stream;
     if ( !cur_stream ||
             ! ( cur_stream->state == NTY_TCP_ESTABLISHED ||
                 cur_stream->state == NTY_TCP_CLOSE_WAIT ) )
@@ -1376,7 +1376,7 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
         }
     }
 
-    nty_tcp_send* snd = cur_stream->snd;
+    dk_tcp_send* snd = cur_stream->snd;
 
     pthread_mutex_lock ( &snd->write_lock );
 
@@ -1396,10 +1396,10 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
         }
     }
 #endif
-    int ret = nty_copy_from_user ( cur_stream, buf, len );
+    int ret = dk_copy_from_user ( cur_stream, buf, len );
     pthread_mutex_unlock ( &snd->write_lock );
 
-    nty_trace_api ( "nty_copy_from_user --> %d, %d\n",
+    dk_trace_api ( "dk_copy_from_user --> %d, %d\n",
                     snd->on_sendq, snd->on_send_list );
     if ( ret > 0 && ! ( snd->on_sendq || snd->on_send_list ) )
     {
@@ -1418,7 +1418,7 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
     {
         if ( ( s->epoll & NTY_EPOLLOUT ) && ! ( s->epoll & NTY_EPOLLET ) )
         {
-            nty_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
+            dk_epoll_add_event ( tcp->ep, USR_SHADOW_EVENT_QUEUE, socket, NTY_EPOLLOUT );
 #if NTY_ENABLE_BLOCKING
         }
         else if ( ! ( socket->opts & NTY_TCP_NONBLOCK ) )
@@ -1434,13 +1434,13 @@ ssize_t send ( int sockid, const void* buf, size_t len, int flags )
     }
 #endif
 
-    nty_trace_api ( "Stream %d: mtcp_write() returning %d\n", cur_stream->id, ret );
+    dk_trace_api ( "Stream %d: mtcp_write() returning %d\n", cur_stream->id, ret );
     return ret;
 }
 
 int close ( int sockid )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
@@ -1452,36 +1452,36 @@ int close ( int sockid )
         return -1;
     }
 
-    //nty_socket_map *socket = &tcp->smap[sockid];
+    //dk_socket_map *socket = &tcp->smap[sockid];
     if ( !tcp->fdtable )
     {
         return -1;
     }
 
-    struct _nty_socket* s = tcp->fdtable->sockfds[sockid];
+    struct _dk_socket* s = tcp->fdtable->sockfds[sockid];
     if ( s->socktype == NTY_TCP_SOCK_UNUSED )
     {
         errno = EINVAL;
         return -1;
     }
-    nty_trace_api ( "Socket %d, type:%d mtcp_close called.\n", sockid, s->socktype );
+    dk_trace_api ( "Socket %d, type:%d mtcp_close called.\n", sockid, s->socktype );
 
     int ret = -1;
     switch ( s->socktype )
     {
         case NTY_TCP_SOCK_STREAM:
         {
-            ret = nty_socket_close_stream ( sockid );
+            ret = dk_socket_close_stream ( sockid );
             break;
         }
         case NTY_TCP_SOCK_LISTENER:
         {
-            ret = nty_socket_close_listening ( sockid );
+            ret = dk_socket_close_listening ( sockid );
             break;
         }
         case NTY_TCP_SOCK_EPOLL:
         {
-            ret = nty_epoll_close_socket ( sockid );
+            ret = dk_epoll_close_socket ( sockid );
             break;
         }
         default:
@@ -1492,7 +1492,7 @@ int close ( int sockid )
         }
     }
 
-    nty_socket_free ( sockid );
+    dk_socket_free ( sockid );
     return ret;
 }
 

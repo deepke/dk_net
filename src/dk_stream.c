@@ -63,15 +63,15 @@ char* close_reason_str[] =
     "TIMEDOUT"
 };
 
-//extern nty_addr_pool *global_addr_pool[ETH_NUM];
-nty_addr_pool* global_addr_pool[ETH_NUM] = {NULL};
+//extern dk_addr_pool *global_addr_pool[ETH_NUM];
+dk_addr_pool* global_addr_pool[ETH_NUM] = {NULL};
 
-extern void RemoveFromRTOList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void RemoveFromTimeoutList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
-extern void RemoveFromTimewaitList ( nty_tcp_manager* tcp, nty_tcp_stream* cur_stream );
+extern void RemoveFromRTOList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void RemoveFromTimeoutList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
+extern void RemoveFromTimewaitList ( dk_tcp_manager* tcp, dk_tcp_stream* cur_stream );
 extern int GetOutputInterface ( uint32_t daddr );
 
-char* TCPStateToString ( nty_tcp_stream* stream )
+char* TCPStateToString ( dk_tcp_stream* stream )
 {
     return state_str[stream->state];
 }
@@ -82,7 +82,7 @@ void InitializeTCPStreamManager()
     next_seed = time ( NULL );
 }
 
-void RaiseReadEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
+void RaiseReadEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream )
 {
     if ( stream->socket )
     {
@@ -91,7 +91,7 @@ void RaiseReadEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 #if NTY_ENABLE_EPOLL_RB
             epoll_event_callback ( tcp->ep, stream->socket->id, NTY_EPOLLIN );
 #else
-            nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLIN );
+            dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLIN );
 #endif
 #if NTY_ENABLE_BLOCKING
         }
@@ -112,7 +112,7 @@ void RaiseReadEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
     }
 }
 
-void RaiseWriteEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
+void RaiseWriteEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream )
 {
     if ( stream->socket )
     {
@@ -122,7 +122,7 @@ void RaiseWriteEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
             //should be stream callback
             epoll_event_callback ( tcp->ep, stream->socket->id, NTY_EPOLLOUT );
 #else
-            nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLOUT );
+            dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLOUT );
 #endif
 #if NTY_ENABLE_BLOCKING
         }
@@ -143,7 +143,7 @@ void RaiseWriteEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
     }
 }
 
-void RaiseCloseEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
+void RaiseCloseEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream )
 {
     if ( stream->socket )
     {
@@ -152,7 +152,7 @@ void RaiseCloseEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 #if NTY_ENABLE_EPOLL_RB
             epoll_event_callback ( tcp->ep, stream->socket->id, NTY_EPOLLRDHUP );
 #else
-            nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLRDHUP );
+            dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLRDHUP );
 #endif
 #if NTY_ENABLE_BLOCKING
         }
@@ -179,7 +179,7 @@ void RaiseCloseEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
     }
 }
 
-void RaiseErrorEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
+void RaiseErrorEvent ( dk_tcp_manager* tcp, dk_tcp_stream* stream )
 {
     if ( stream->socket )
     {
@@ -188,7 +188,7 @@ void RaiseErrorEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 #if NTY_ENABLE_EPOLL_RB
             epoll_event_callback ( tcp->ep, stream->socket->id, NTY_EPOLLERR );
 #else
-            nty_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLERR );
+            dk_epoll_add_event ( tcp->ep, NTY_EVENT_QUEUE, stream->socket, NTY_EPOLLERR );
 #endif
 #if NTY_ENABLE_BLOCKING
         }
@@ -216,41 +216,41 @@ void RaiseErrorEvent ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 }
 
 
-nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _dk_socket_map* socket, int type,
+dk_tcp_stream* CreateTcpStream ( dk_tcp_manager* tcp, struct _dk_socket_map* socket, int type,
                                   uint32_t saddr, uint16_t sport, uint32_t daddr, uint16_t dport )
 {
 
-    nty_tcp_stream* stream = NULL;
+    dk_tcp_stream* stream = NULL;
 
     pthread_mutex_lock ( &tcp->ctx->flow_pool_lock );
 
-    stream = nty_mempool_alloc ( tcp->flow );
+    stream = dk_mempool_alloc ( tcp->flow );
     if ( stream == NULL )
     {
         pthread_mutex_unlock ( &tcp->ctx->flow_pool_lock );
         return NULL;
     }
-    memset ( stream, 0, sizeof ( nty_tcp_stream ) );
+    memset ( stream, 0, sizeof ( dk_tcp_stream ) );
 
-    stream->rcv = ( nty_tcp_recv* ) nty_mempool_alloc ( tcp->rcv );
+    stream->rcv = ( dk_tcp_recv* ) dk_mempool_alloc ( tcp->rcv );
     if ( stream->rcv == NULL )
     {
-        nty_mempool_free ( tcp->flow, stream );
+        dk_mempool_free ( tcp->flow, stream );
         pthread_mutex_unlock ( &tcp->ctx->flow_pool_lock );
         return NULL;
     }
-    memset ( stream->rcv, 0, sizeof ( nty_tcp_recv ) );
+    memset ( stream->rcv, 0, sizeof ( dk_tcp_recv ) );
 
-    stream->snd = ( nty_tcp_send* ) nty_mempool_alloc ( tcp->snd );
+    stream->snd = ( dk_tcp_send* ) dk_mempool_alloc ( tcp->snd );
     if ( !stream->snd )
     {
-        nty_mempool_free ( tcp->rcv, stream->rcv );
-        nty_mempool_free ( tcp->flow, stream );
+        dk_mempool_free ( tcp->rcv, stream->rcv );
+        dk_mempool_free ( tcp->flow, stream );
 
         pthread_mutex_unlock ( &tcp->ctx->flow_pool_lock );
         return NULL;
     }
-    memset ( stream->snd, 0, sizeof ( nty_tcp_send ) );
+    memset ( stream->snd, 0, sizeof ( dk_tcp_send ) );
 
     stream->id = tcp->gid ++;
     stream->saddr = saddr;
@@ -261,9 +261,9 @@ nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _dk_socket_map* s
     int ret = StreamHTInsert ( tcp->tcp_flow_table, stream );
     if ( ret < 0 )
     {
-        nty_mempool_free ( tcp->rcv, stream->rcv );
-        nty_mempool_free ( tcp->snd, stream->snd );
-        nty_mempool_free ( tcp->flow, stream );
+        dk_mempool_free ( tcp->rcv, stream->rcv );
+        dk_mempool_free ( tcp->snd, stream->snd );
+        dk_mempool_free ( tcp->flow, stream );
 
         pthread_mutex_unlock ( &tcp->ctx->flow_pool_lock );
         return NULL;
@@ -356,7 +356,7 @@ nty_tcp_stream* CreateTcpStream ( nty_tcp_manager* tcp, struct _dk_socket_map* s
 }
 
 
-void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
+void DestroyTcpStream ( dk_tcp_manager* tcp, dk_tcp_stream* stream )
 {
 
     uint8_t* sa = ( uint8_t* ) &stream->saddr;
@@ -394,9 +394,9 @@ void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
         addr.sin_port = stream->sport;
     }
 
-    nty_tcp_remove_controllist ( tcp, stream );
-    nty_tcp_remove_sendlist ( tcp, stream );
-    nty_tcp_remove_acklist ( tcp, stream );
+    dk_tcp_remove_controllist ( tcp, stream );
+    dk_tcp_remove_sendlist ( tcp, stream );
+    dk_tcp_remove_acklist ( tcp, stream );
 
     if ( stream->on_rto_idx >= 0 )
     {
@@ -436,9 +436,9 @@ void DestroyTcpStream ( nty_tcp_manager* tcp, nty_tcp_stream* stream )
 
     tcp->flow_cnt --;
 
-    nty_mempool_free ( tcp->rcv, stream->rcv );
-    nty_mempool_free ( tcp->snd, stream->snd );
-    nty_mempool_free ( tcp->flow, stream );
+    dk_mempool_free ( tcp->rcv, stream->rcv );
+    dk_mempool_free ( tcp->snd, stream->snd );
+    dk_mempool_free ( tcp->flow, stream );
 
     pthread_mutex_unlock ( &tcp->ctx->flow_pool_lock );
 

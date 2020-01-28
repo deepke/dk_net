@@ -1,13 +1,13 @@
 
-BLOCK_SERVER_OBJ = $(BIN_DIR)/nty_example_tcp_server.o
-EPOLL_SERVER_OBJ = $(BIN_DIR)/nty_example_epoll_server.o
-EPOLL_RB_SERVER_OBJ = $(BIN_DIR)/nty_example_epoll_rb_server.o
-POSIX_SERVER_OBJ = $(BIN_DIR)/nty_example_posix_block_server.o
+BLOCK_SERVER_OBJ = $(BIN_DIR)/dk_example_tcp_server.o
+EPOLL_SERVER_OBJ = $(BIN_DIR)/dk_example_epoll_server.o
+EPOLL_RB_SERVER_OBJ = $(BIN_DIR)/dk_example_epoll_rb_server.o
+POSIX_SERVER_OBJ = $(BIN_DIR)/dk_example_posix_block_server.o
 
-BLOCK_SERVER = nty_example_block_server
-EPOLL_SERVER = nty_example_epoll_server
-EPOLL_RB_SERVER = nty_example_epoll_rb_server
-POSIX_SERVER = nty_example_posix_block_server
+BLOCK_SERVER = dk_example_block_server
+EPOLL_SERVER = dk_example_epoll_server
+EPOLL_RB_SERVER = dk_example_epoll_rb_server
+POSIX_SERVER = dk_example_posix_block_server
 
 all : $(BLOCK_SERVER) $(EPOLL_SERVER) $(EPOLL_RB_SERVER) $(POSIX_SERVER)
 

@@ -54,7 +54,7 @@ typedef enum
     NTY_EPOLLONESHOT = ( 1 << 30 ),
     NTY_EPOLLET     = ( 1 << 31 )
 
-} nty_epoll_type;
+} dk_epoll_type;
 
 
 typedef enum
@@ -62,27 +62,27 @@ typedef enum
     NTY_EPOLL_CTL_ADD = 1,
     NTY_EPOLL_CTL_DEL = 2,
     NTY_EPOLL_CTL_MOD = 3,
-} nty_epoll_op;
+} dk_epoll_op;
 
 
-typedef union _nty_epoll_data
+typedef union _dk_epoll_data
 {
     void* ptr;
     int sockid;
     uint32_t u32;
     uint64_t u64;
-} nty_epoll_data;
+} dk_epoll_data;
 
 typedef struct
 {
     uint32_t events;
     uint64_t data;
-} nty_epoll_event;
+} dk_epoll_event;
 
 
-int nty_epoll_create ( int size );
-int nty_epoll_ctl ( int epid, int op, int sockid, nty_epoll_event* event );
-int nty_epoll_wait ( int epid, nty_epoll_event* events, int maxevents, int timeout );
+int dk_epoll_create ( int size );
+int dk_epoll_ctl ( int epid, int op, int sockid, dk_epoll_event* event );
+int dk_epoll_wait ( int epid, dk_epoll_event* events, int maxevents, int timeout );
 
 
 #if NTY_ENABLE_EPOLL_RB
@@ -131,7 +131,7 @@ int epoll_ctl ( int epid, int op, int sockid, struct epoll_event* event );
 int epoll_wait ( int epid, struct epoll_event* events, int maxevents, int timeout );
 
 
-int nty_epoll_close_socket ( int epid );
+int dk_epoll_close_socket ( int epid );
 
 
 

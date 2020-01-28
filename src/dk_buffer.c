@@ -29,9 +29,9 @@
 #include "dk_buffer.h"
 
 
-nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum )
+dk_sb_manager* dk_sbmanager_create ( size_t chunk_size, uint32_t cnum )
 {
-    nty_sb_manager* sbm = ( nty_sb_manager* ) calloc ( 1, sizeof ( nty_sb_manager ) );
+    dk_sb_manager* sbm = ( dk_sb_manager* ) calloc ( 1, sizeof ( dk_sb_manager ) );
     if ( !sbm )
     {
         printf ( "SBManagerCreate() failed. %s\n", strerror ( errno ) );
@@ -40,7 +40,7 @@ nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum )
 
     sbm->chunk_size = chunk_size;
     sbm->cnum = cnum;
-    sbm->mp = ( struct _nty_mempool* ) nty_mempool_create ( chunk_size, ( uint64_t ) chunk_size * cnum, 0 );
+    sbm->mp = ( struct _dk_mempool* ) dk_mempool_create ( chunk_size, ( uint64_t ) chunk_size * cnum, 0 );
     if ( !sbm->mp )
     {
         printf ( "Failed to create mem pool for sb.\n" );
@@ -52,7 +52,7 @@ nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum )
     if ( !sbm->freeq )
     {
         printf ( "Failed to create free buffer queue.\n" );
-        nty_mempool_destory ( sbm->mp );
+        dk_mempool_destory ( sbm->mp );
         free ( sbm );
         return NULL;
     }
@@ -61,21 +61,21 @@ nty_sb_manager* nty_sbmanager_create ( size_t chunk_size, uint32_t cnum )
 }
 
 
-nty_send_buffer* SBInit ( nty_sb_manager* sbm, uint32_t init_seq )
+dk_send_buffer* SBInit ( dk_sb_manager* sbm, uint32_t init_seq )
 {
-    nty_send_buffer* buf;
+    dk_send_buffer* buf;
 
     /* first try dequeue from free buffer queue */
     buf = SBDequeue ( sbm->freeq );
     if ( !buf )
     {
-        buf = ( nty_send_buffer* ) malloc ( sizeof ( nty_send_buffer ) );
+        buf = ( dk_send_buffer* ) malloc ( sizeof ( dk_send_buffer ) );
         if ( !buf )
         {
             perror ( "malloc() for buf" );
             return NULL;
         }
-        buf->data = nty_mempool_alloc ( sbm->mp );
+        buf->data = dk_mempool_alloc ( sbm->mp );
         if ( !buf->data )
         {
             printf ( "Failed to fetch memory chunk for data.\n" );
@@ -96,7 +96,7 @@ nty_send_buffer* SBInit ( nty_sb_manager* sbm, uint32_t init_seq )
     return buf;
 }
 
-void SBFree ( nty_sb_manager* sbm, nty_send_buffer* buf )
+void SBFree ( dk_sb_manager* sbm, dk_send_buffer* buf )
 {
     if ( !buf )
     {
@@ -106,7 +106,7 @@ void SBFree ( nty_sb_manager* sbm, nty_send_buffer* buf )
     SBEnqueue ( sbm->freeq, buf );
 }
 
-size_t SBPut ( nty_sb_manager* sbm, nty_send_buffer* buf, const void* data, size_t len )
+size_t SBPut ( dk_sb_manager* sbm, dk_send_buffer* buf, const void* data, size_t len )
 {
     size_t to_put;
 
@@ -143,7 +143,7 @@ size_t SBPut ( nty_sb_manager* sbm, nty_send_buffer* buf, const void* data, size
     return to_put;
 }
 
-size_t SBRemove ( nty_sb_manager* sbm, nty_send_buffer* buf, size_t len )
+size_t SBRemove ( dk_sb_manager* sbm, dk_send_buffer* buf, size_t len )
 {
     size_t to_remove;
 
@@ -178,18 +178,18 @@ size_t SBRemove ( nty_sb_manager* sbm, nty_send_buffer* buf, size_t len )
 /*** ******************************** sb queue ******************************** ***/
 
 
-nty_sb_queue* CreateSBQueue ( int capacity )
+dk_sb_queue* CreateSBQueue ( int capacity )
 {
-    nty_sb_queue* sq;
+    dk_sb_queue* sq;
 
-    sq = ( nty_sb_queue* ) calloc ( 1, sizeof ( nty_sb_queue ) );
+    sq = ( dk_sb_queue* ) calloc ( 1, sizeof ( dk_sb_queue ) );
     if ( !sq )
     {
         return NULL;
     }
 
-    sq->_q = ( nty_send_buffer** )
-             calloc ( capacity + 1, sizeof ( nty_send_buffer* ) );
+    sq->_q = ( dk_send_buffer** )
+             calloc ( capacity + 1, sizeof ( dk_send_buffer* ) );
     if ( !sq->_q )
     {
         free ( sq );
@@ -202,7 +202,7 @@ nty_sb_queue* CreateSBQueue ( int capacity )
     return sq;
 }
 
-void DestroySBQueue ( nty_sb_queue* sq )
+void DestroySBQueue ( dk_sb_queue* sq )
 {
     if ( !sq )
     {
@@ -219,7 +219,7 @@ void DestroySBQueue ( nty_sb_queue* sq )
 }
 
 
-int SBEnqueue ( nty_sb_queue* sq, nty_send_buffer* buf )
+int SBEnqueue ( dk_sb_queue* sq, dk_send_buffer* buf )
 {
     index_type h = sq->_head;
     index_type t = sq->_tail;
@@ -237,14 +237,14 @@ int SBEnqueue ( nty_sb_queue* sq, nty_send_buffer* buf )
     return -1;
 }
 
-nty_send_buffer* SBDequeue ( nty_sb_queue* sq )
+dk_send_buffer* SBDequeue ( dk_sb_queue* sq )
 {
     index_type h = sq->_head;
     index_type t = sq->_tail;
 
     if ( h != t )
     {
-        nty_send_buffer* buf = sq->_q[h];
+        dk_send_buffer* buf = sq->_q[h];
         MemoryBarrier ( sq->_q[h], sq->_head );
         sq->_head = NextIndex ( sq, h );
         assert ( buf );
@@ -255,18 +255,18 @@ nty_send_buffer* SBDequeue ( nty_sb_queue* sq )
     return NULL;
 }
 
-nty_rb_frag_queue* CreateRBFragQueue ( int capacity )
+dk_rb_frag_queue* CreateRBFragQueue ( int capacity )
 {
-    nty_rb_frag_queue* rb_fragq;
+    dk_rb_frag_queue* rb_fragq;
 
-    rb_fragq = ( nty_rb_frag_queue* ) calloc ( 1, sizeof ( nty_rb_frag_queue ) );
+    rb_fragq = ( dk_rb_frag_queue* ) calloc ( 1, sizeof ( dk_rb_frag_queue ) );
     if ( !rb_fragq )
     {
         return NULL;
     }
 
-    rb_fragq->_q = ( nty_fragment_ctx** )
-                   calloc ( capacity + 1, sizeof ( nty_fragment_ctx* ) );
+    rb_fragq->_q = ( dk_fragment_ctx** )
+                   calloc ( capacity + 1, sizeof ( dk_fragment_ctx* ) );
     if ( !rb_fragq->_q )
     {
         free ( rb_fragq );
@@ -279,7 +279,7 @@ nty_rb_frag_queue* CreateRBFragQueue ( int capacity )
     return rb_fragq;
 }
 /*---------------------------------------------------------------------------*/
-void DestroyRBFragQueue ( nty_rb_frag_queue* rb_fragq )
+void DestroyRBFragQueue ( dk_rb_frag_queue* rb_fragq )
 {
     if ( !rb_fragq )
     {
@@ -295,7 +295,7 @@ void DestroyRBFragQueue ( nty_rb_frag_queue* rb_fragq )
     free ( rb_fragq );
 }
 /*---------------------------------------------------------------------------*/
-int RBFragEnqueue ( nty_rb_frag_queue* rb_fragq, nty_fragment_ctx* frag )
+int RBFragEnqueue ( dk_rb_frag_queue* rb_fragq, dk_fragment_ctx* frag )
 {
     index_type h = rb_fragq->_head;
     index_type t = rb_fragq->_tail;
@@ -313,15 +313,15 @@ int RBFragEnqueue ( nty_rb_frag_queue* rb_fragq, nty_fragment_ctx* frag )
     return -1;
 }
 /*---------------------------------------------------------------------------*/
-struct _nty_fragment_ctx*
-RBFragDequeue ( nty_rb_frag_queue* rb_fragq )
+struct _dk_fragment_ctx*
+RBFragDequeue ( dk_rb_frag_queue* rb_fragq )
 {
     index_type h = rb_fragq->_head;
     index_type t = rb_fragq->_tail;
 
     if ( h != t )
     {
-        struct _nty_fragment_ctx* frag = rb_fragq->_q[h];
+        struct _dk_fragment_ctx* frag = rb_fragq->_q[h];
         MemoryBarrier ( rb_fragq->_q[h], rb_fragq->_head );
         rb_fragq->_head = NextIndex ( rb_fragq, h );
         assert ( frag );
@@ -332,7 +332,7 @@ RBFragDequeue ( nty_rb_frag_queue* rb_fragq )
     return NULL;
 }
 
-void RBPrintInfo ( nty_ring_buffer* buff )
+void RBPrintInfo ( dk_ring_buffer* buff )
 {
     printf ( "buff_data %p, buff_size %d, buff_mlen %d, "
              "buff_clen %lu, buff_head %p (%d), buff_tail (%d)\n",
@@ -340,13 +340,13 @@ void RBPrintInfo ( nty_ring_buffer* buff )
              buff->head, buff->head_offset, buff->tail_offset );
 }
 
-void RBPrintStr ( nty_ring_buffer* buff )
+void RBPrintStr ( dk_ring_buffer* buff )
 {
     RBPrintInfo ( buff );
     printf ( "%s\n", buff->head );
 }
 
-void RBPrintHex ( nty_ring_buffer* buff )
+void RBPrintHex ( dk_ring_buffer* buff )
 {
     int i;
 
@@ -363,9 +363,9 @@ void RBPrintHex ( nty_ring_buffer* buff )
     printf ( "\n" );
 }
 
-nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
+dk_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
 {
-    nty_rb_manager* rbm = ( nty_rb_manager* ) calloc ( 1, sizeof ( nty_rb_manager ) );
+    dk_rb_manager* rbm = ( dk_rb_manager* ) calloc ( 1, sizeof ( dk_rb_manager ) );
 
     if ( !rbm )
     {
@@ -375,7 +375,7 @@ nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
 
     rbm->chunk_size = chunk_size;
     rbm->cnum = cnum;
-    rbm->mp = ( nty_mempool* ) nty_mempool_create ( chunk_size, ( uint64_t ) chunk_size * cnum, 0 );
+    rbm->mp = ( dk_mempool* ) dk_mempool_create ( chunk_size, ( uint64_t ) chunk_size * cnum, 0 );
     if ( !rbm->mp )
     {
         printf ( "Failed to allocate mp pool.\n" );
@@ -383,12 +383,12 @@ nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
         return NULL;
     }
 
-    rbm->frag_mp = ( nty_mempool* ) nty_mempool_create ( sizeof ( nty_fragment_ctx ),
-                                                         sizeof ( nty_fragment_ctx ) * cnum, 0 );
+    rbm->frag_mp = ( dk_mempool* ) dk_mempool_create ( sizeof ( dk_fragment_ctx ),
+                                                         sizeof ( dk_fragment_ctx ) * cnum, 0 );
     if ( !rbm->frag_mp )
     {
         printf ( "Failed to allocate frag_mp pool.\n" );
-        nty_mempool_destory ( rbm->mp );
+        dk_mempool_destory ( rbm->mp );
         free ( rbm );
         return NULL;
     }
@@ -397,8 +397,8 @@ nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
     if ( !rbm->free_fragq )
     {
         printf ( "Failed to create free fragment queue.\n" );
-        nty_mempool_destory ( rbm->mp );
-        nty_mempool_destory ( rbm->frag_mp );
+        dk_mempool_destory ( rbm->mp );
+        dk_mempool_destory ( rbm->frag_mp );
         free ( rbm );
         return NULL;
     }
@@ -406,8 +406,8 @@ nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
     if ( !rbm->free_fragq_int )
     {
         printf ( "Failed to create internal free fragment queue.\n" );
-        nty_mempool_destory ( rbm->mp );
-        nty_mempool_destory ( rbm->frag_mp );
+        dk_mempool_destory ( rbm->mp );
+        dk_mempool_destory ( rbm->frag_mp );
         DestroyRBFragQueue ( rbm->free_fragq );
         free ( rbm );
         return NULL;
@@ -416,7 +416,7 @@ nty_rb_manager* RBManagerCreate ( size_t chunk_size, uint32_t cnum )
     return rbm;
 }
 
-static inline void FreeFragmentContextSingle ( nty_rb_manager* rbm, nty_fragment_ctx* frag )
+static inline void FreeFragmentContextSingle ( dk_rb_manager* rbm, dk_fragment_ctx* frag )
 {
     if ( frag->is_calloc )
     {
@@ -424,13 +424,13 @@ static inline void FreeFragmentContextSingle ( nty_rb_manager* rbm, nty_fragment
     }
     else
     {
-        nty_mempool_free ( rbm->frag_mp, frag );
+        dk_mempool_free ( rbm->frag_mp, frag );
     }
 }
 
-void FreeFragmentContext ( nty_rb_manager* rbm, nty_fragment_ctx* fctx )
+void FreeFragmentContext ( dk_rb_manager* rbm, dk_fragment_ctx* fctx )
 {
-    nty_fragment_ctx* remove;
+    dk_fragment_ctx* remove;
 
     assert ( fctx );
     if ( fctx == NULL )
@@ -446,9 +446,9 @@ void FreeFragmentContext ( nty_rb_manager* rbm, nty_fragment_ctx* fctx )
     }
 }
 
-static nty_fragment_ctx* AllocateFragmentContext ( nty_rb_manager* rbm )
+static dk_fragment_ctx* AllocateFragmentContext ( dk_rb_manager* rbm )
 {
-    nty_fragment_ctx* frag;
+    dk_fragment_ctx* frag;
 
     frag = RBFragDequeue ( rbm->free_fragq );
     if ( !frag )
@@ -457,11 +457,11 @@ static nty_fragment_ctx* AllocateFragmentContext ( nty_rb_manager* rbm )
         if ( !frag )
         {
             /* next fall back to fetching from mempool */
-            frag = nty_mempool_alloc ( rbm->frag_mp );
+            frag = dk_mempool_alloc ( rbm->frag_mp );
             if ( !frag )
             {
                 printf ( "fragments depleted, fall back to calloc\n" );
-                frag = calloc ( 1, sizeof ( nty_fragment_ctx ) );
+                frag = calloc ( 1, sizeof ( dk_fragment_ctx ) );
                 if ( frag == NULL )
                 {
                     printf ( "calloc failed\n" );
@@ -475,9 +475,9 @@ static nty_fragment_ctx* AllocateFragmentContext ( nty_rb_manager* rbm )
     return frag;
 }
 
-nty_ring_buffer* RBInit ( nty_rb_manager* rbm, uint32_t init_seq )
+dk_ring_buffer* RBInit ( dk_rb_manager* rbm, uint32_t init_seq )
 {
-    nty_ring_buffer* buff = ( nty_ring_buffer* ) calloc ( 1, sizeof ( nty_ring_buffer ) );
+    dk_ring_buffer* buff = ( dk_ring_buffer* ) calloc ( 1, sizeof ( dk_ring_buffer ) );
 
     if ( buff == NULL )
     {
@@ -485,7 +485,7 @@ nty_ring_buffer* RBInit ( nty_rb_manager* rbm, uint32_t init_seq )
         return NULL;
     }
 
-    buff->data = nty_mempool_alloc ( rbm->mp );
+    buff->data = dk_mempool_alloc ( rbm->mp );
     if ( !buff->data )
     {
         perror ( "rb_init MPAllocateChunk" );
@@ -505,7 +505,7 @@ nty_ring_buffer* RBInit ( nty_rb_manager* rbm, uint32_t init_seq )
     return buff;
 }
 
-void RBFree ( nty_rb_manager* rbm, nty_ring_buffer* buff )
+void RBFree ( dk_rb_manager* rbm, dk_ring_buffer* buff )
 {
     assert ( buff );
     if ( buff->fctx )
@@ -516,7 +516,7 @@ void RBFree ( nty_rb_manager* rbm, nty_ring_buffer* buff )
 
     if ( buff->data )
     {
-        nty_mempool_free ( rbm->mp, buff->data );
+        dk_mempool_free ( rbm->mp, buff->data );
     }
 
     rbm->cur_num--;
@@ -555,7 +555,7 @@ static inline uint32_t GetMaxSeq ( uint32_t a, uint32_t b )
     return ( ( a - b ) <= MAXSEQ/2 ) ? a : b;
 }
 /*----------------------------------------------------------------------------*/
-static inline int CanMerge ( const nty_fragment_ctx* a, const nty_fragment_ctx* b )
+static inline int CanMerge ( const dk_fragment_ctx* a, const dk_fragment_ctx* b )
 {
     uint32_t a_end = a->seq + a->len + 1;
     uint32_t b_end = b->seq + b->len + 1;
@@ -568,7 +568,7 @@ static inline int CanMerge ( const nty_fragment_ctx* a, const nty_fragment_ctx* 
     return ( 1 );
 }
 
-static inline void MergeFragments ( nty_fragment_ctx* a, nty_fragment_ctx* b )
+static inline void MergeFragments ( dk_fragment_ctx* a, dk_fragment_ctx* b )
 {
     /* merge a into b */
     uint32_t min_seq, max_seq;
@@ -579,13 +579,13 @@ static inline void MergeFragments ( nty_fragment_ctx* a, nty_fragment_ctx* b )
     b->len  = max_seq - min_seq;
 }
 
-int RBPut ( nty_rb_manager* rbm, nty_ring_buffer* buff,
+int RBPut ( dk_rb_manager* rbm, dk_ring_buffer* buff,
             void* data, uint32_t len, uint32_t cur_seq )
 {
     int putx, end_off;
-    nty_fragment_ctx* new_ctx;
-    nty_fragment_ctx* iter;
-    nty_fragment_ctx* prev, *pprev;
+    dk_fragment_ctx* new_ctx;
+    dk_fragment_ctx* iter;
+    dk_fragment_ctx* prev, *pprev;
     int merged = 0;
 
     if ( len <= 0 )
@@ -703,7 +703,7 @@ int RBPut ( nty_rb_manager* rbm, nty_ring_buffer* buff,
     return len;
 }
 /*----------------------------------------------------------------------------*/
-size_t RBRemove ( nty_rb_manager* rbm, nty_ring_buffer* buff, size_t len, int option )
+size_t RBRemove ( dk_rb_manager* rbm, dk_ring_buffer* buff, size_t len, int option )
 {
     /* this function should be called only in application thread */
 
@@ -730,7 +730,7 @@ size_t RBRemove ( nty_rb_manager* rbm, nty_ring_buffer* buff, size_t len, int op
     // modify fragementation chunks
     if ( len == buff->fctx->len )
     {
-        nty_fragment_ctx* remove = buff->fctx;
+        dk_fragment_ctx* remove = buff->fctx;
         buff->fctx = buff->fctx->next;
         if ( option == AT_APP )
         {
@@ -756,17 +756,17 @@ size_t RBRemove ( nty_rb_manager* rbm, nty_ring_buffer* buff, size_t len, int op
 
 
 
-nty_stream_queue_int* CreateInternalStreamQueue ( int size )
+dk_stream_queue_int* CreateInternalStreamQueue ( int size )
 {
-    nty_stream_queue_int* sq;
+    dk_stream_queue_int* sq;
 
-    sq = ( nty_stream_queue_int* ) calloc ( 1, sizeof ( nty_stream_queue_int ) );
+    sq = ( dk_stream_queue_int* ) calloc ( 1, sizeof ( dk_stream_queue_int ) );
     if ( !sq )
     {
         return NULL;
     }
 
-    sq->array = ( struct _nty_tcp_stream** ) calloc ( size, sizeof ( struct _nty_tcp_stream* ) );
+    sq->array = ( struct _dk_tcp_stream** ) calloc ( size, sizeof ( struct _dk_tcp_stream* ) );
     if ( !sq->array )
     {
         free ( sq );
@@ -780,7 +780,7 @@ nty_stream_queue_int* CreateInternalStreamQueue ( int size )
     return sq;
 }
 
-void DestroyInternalStreamQueue ( nty_stream_queue_int* sq )
+void DestroyInternalStreamQueue ( dk_stream_queue_int* sq )
 {
     if ( !sq )
     {
@@ -796,7 +796,7 @@ void DestroyInternalStreamQueue ( nty_stream_queue_int* sq )
     free ( sq );
 }
 
-int StreamInternalEnqueue ( nty_stream_queue_int* sq, struct _nty_tcp_stream* stream )
+int StreamInternalEnqueue ( dk_stream_queue_int* sq, struct _dk_tcp_stream* stream )
 {
     if ( sq->count >= sq->size )
     {
@@ -817,9 +817,9 @@ int StreamInternalEnqueue ( nty_stream_queue_int* sq, struct _nty_tcp_stream* st
     return 0;
 }
 
-struct _nty_tcp_stream* StreamInternalDequeue ( nty_stream_queue_int* sq )
+struct _dk_tcp_stream* StreamInternalDequeue ( dk_stream_queue_int* sq )
 {
-    struct _nty_tcp_stream* stream = NULL;
+    struct _dk_tcp_stream* stream = NULL;
 
     if ( sq->count <= 0 )
     {
@@ -838,23 +838,23 @@ struct _nty_tcp_stream* StreamInternalDequeue ( nty_stream_queue_int* sq )
     return stream;
 }
 
-int StreamQueueIsEmpty ( nty_stream_queue* sq )
+int StreamQueueIsEmpty ( dk_stream_queue* sq )
 {
     return ( sq->_head == sq->_tail );
 }
 
 
-nty_stream_queue* CreateStreamQueue ( int capacity )
+dk_stream_queue* CreateStreamQueue ( int capacity )
 {
-    nty_stream_queue* sq;
+    dk_stream_queue* sq;
 
-    sq = ( nty_stream_queue* ) calloc ( 1, sizeof ( nty_stream_queue ) );
+    sq = ( dk_stream_queue* ) calloc ( 1, sizeof ( dk_stream_queue ) );
     if ( !sq )
     {
         return NULL;
     }
 
-    sq->_q = ( struct _nty_tcp_stream** ) calloc ( capacity + 1, sizeof ( struct _nty_tcp_stream* ) );
+    sq->_q = ( struct _dk_tcp_stream** ) calloc ( capacity + 1, sizeof ( struct _dk_tcp_stream* ) );
     if ( !sq->_q )
     {
         free ( sq );
@@ -867,7 +867,7 @@ nty_stream_queue* CreateStreamQueue ( int capacity )
     return sq;
 }
 
-void DestroyStreamQueue ( nty_stream_queue* sq )
+void DestroyStreamQueue ( dk_stream_queue* sq )
 {
     if ( !sq )
     {
@@ -883,7 +883,7 @@ void DestroyStreamQueue ( nty_stream_queue* sq )
     free ( sq );
 }
 
-int StreamEnqueue ( nty_stream_queue* sq, struct _nty_tcp_stream* stream )
+int StreamEnqueue ( dk_stream_queue* sq, struct _dk_tcp_stream* stream )
 {
     index_type h = sq->_head;
     index_type t = sq->_tail;
@@ -901,14 +901,14 @@ int StreamEnqueue ( nty_stream_queue* sq, struct _nty_tcp_stream* stream )
     return -1;
 }
 
-struct _nty_tcp_stream* StreamDequeue ( nty_stream_queue* sq )
+struct _dk_tcp_stream* StreamDequeue ( dk_stream_queue* sq )
 {
     index_type h = sq->_head;
     index_type t = sq->_tail;
 
     if ( h != t )
     {
-        struct _nty_tcp_stream* stream = sq->_q[h];
+        struct _dk_tcp_stream* stream = sq->_q[h];
         MemoryBarrier ( sq->_q[h], sq->_head );
         sq->_head = NextIndex ( sq, h );
         assert ( stream );

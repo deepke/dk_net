@@ -33,12 +33,12 @@
 #include <pthread.h>
 #include <errno.h>
 
-extern nty_tcp_manager* nty_get_tcp_manager ( void );
+extern dk_tcp_manager* dk_get_tcp_manager ( void );
 
 
-nty_socket_map* nty_allocate_socket ( int socktype, int need_lock )
+dk_socket_map* dk_allocate_socket ( int socktype, int need_lock )
 {
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( tcp == NULL )
     {
         assert ( 0 );
@@ -50,7 +50,7 @@ nty_socket_map* nty_allocate_socket ( int socktype, int need_lock )
         pthread_mutex_lock ( &tcp->ctx->smap_lock );
     }
 
-    nty_socket_map* socket = NULL;
+    dk_socket_map* socket = NULL;
     while ( socket == NULL )
     {
         socket = TAILQ_FIRST ( &tcp->free_smap );
@@ -84,18 +84,18 @@ nty_socket_map* nty_allocate_socket ( int socktype, int need_lock )
     socket->events = 0;
 
     memset ( &socket->s_addr, 0, sizeof ( struct sockaddr_in ) );
-    memset ( &socket->ep_data, 0, sizeof ( nty_epoll_data ) );
+    memset ( &socket->ep_data, 0, sizeof ( dk_epoll_data ) );
 
     return socket;
 
 }
 
 
-void nty_free_socket ( int sockid, int need_lock )
+void dk_free_socket ( int sockid, int need_lock )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
+    dk_socket_map* socket = &tcp->smap[sockid];
 
     if ( socket->socktype == NTY_TCP_SOCK_UNUSED )
     {
@@ -119,7 +119,7 @@ void nty_free_socket ( int sockid, int need_lock )
 }
 
 
-nty_socket_map* nty_get_socket ( int sockid )
+dk_socket_map* dk_get_socket ( int sockid )
 {
 #if 1
     if ( sockid < 0 || sockid >= NTY_MAX_CONCURRENCY )
@@ -128,8 +128,8 @@ nty_socket_map* nty_get_socket ( int sockid )
         return NULL;
     }
 #endif
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
-    nty_socket_map* socket = &tcp->smap[sockid];
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
+    dk_socket_map* socket = &tcp->smap[sockid];
 
     return socket;
 }
@@ -142,22 +142,22 @@ nty_socket_map* nty_get_socket ( int sockid )
 
 #if NTY_ENABLE_SOCKET_C10M
 
-struct _nty_socket_table* nty_socket_allocate_fdtable ( void )
+struct _dk_socket_table* dk_socket_allocate_fdtable ( void )
 {
 
-    //nty_tcp_manager *tcp = nty_get_tcp_manager();
+    //dk_tcp_manager *tcp = dk_get_tcp_manager();
     //if (tcp == NULL) return NULL;
 
-    struct _nty_socket_table* sock_table = ( struct _nty_socket_table* ) calloc ( 1, sizeof ( struct _nty_socket_table ) );
+    struct _dk_socket_table* sock_table = ( struct _dk_socket_table* ) calloc ( 1, sizeof ( struct _dk_socket_table ) );
     if ( sock_table == NULL )
     {
         errno = -ENOMEM;
         return NULL;
     }
 
-    size_t total_size = NTY_SOCKFD_NR * sizeof ( struct _nty_socket* );
+    size_t total_size = NTY_SOCKFD_NR * sizeof ( struct _dk_socket* );
 #if 0 //(NTY_SOCKFD_NR > 1024)
-    sock_table->sockfds = ( struct _nty_socket** ) get_huge_pages ( total_size, GHP_DEFAULT );
+    sock_table->sockfds = ( struct _dk_socket** ) get_huge_pages ( total_size, GHP_DEFAULT );
     if ( sock_table->sockfds == NULL )
     {
         errno = -ENOMEM;
@@ -209,7 +209,7 @@ struct _nty_socket_table* nty_socket_allocate_fdtable ( void )
 }
 
 
-void nty_socket_free_fdtable ( struct _nty_socket_table* fdtable )
+void dk_socket_free_fdtable ( struct _dk_socket_table* fdtable )
 {
 
     pthread_spin_destroy ( &fdtable->lock );
@@ -228,28 +228,28 @@ void nty_socket_free_fdtable ( struct _nty_socket_table* fdtable )
 /*
  * singleton should use CAS
  */
-struct _nty_socket_table* nty_socket_get_fdtable ( void )
+struct _dk_socket_table* dk_socket_get_fdtable ( void )
 {
 #if 0
     if ( fdtable == NULL )
     {
-        fdtable = nty_socket_allocate_table();
+        fdtable = dk_socket_allocate_table();
     }
     return fdtable;
 #else
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
 
     return tcp->fdtable;
 #endif
 }
 
-struct _nty_socket_table* nty_socket_init_fdtable ( void )
+struct _dk_socket_table* dk_socket_init_fdtable ( void )
 {
-    return nty_socket_allocate_fdtable();
+    return dk_socket_allocate_fdtable();
 }
 
 
-int nty_socket_find_id ( unsigned char* fds, int start, size_t max_fds )
+int dk_socket_find_id ( unsigned char* fds, int start, size_t max_fds )
 {
 
     size_t i = 0;
@@ -276,7 +276,7 @@ int nty_socket_find_id ( unsigned char* fds, int start, size_t max_fds )
     return i * NTY_BITS_PER_BYTE + j;
 }
 
-char nty_socket_unuse_id ( unsigned char* fds, size_t idx )
+char dk_socket_unuse_id ( unsigned char* fds, size_t idx )
 {
 
     int i = idx / NTY_BITS_PER_BYTE;
@@ -288,12 +288,12 @@ char nty_socket_unuse_id ( unsigned char* fds, size_t idx )
     return fds[i];
 }
 
-int nty_socket_set_start ( size_t idx )
+int dk_socket_set_start ( size_t idx )
 {
     return idx / NTY_BITS_PER_BYTE;
 }
 
-char nty_socket_use_id ( unsigned char* fds, size_t idx )
+char dk_socket_use_id ( unsigned char* fds, size_t idx )
 {
 
     int i = idx / NTY_BITS_PER_BYTE;
@@ -307,22 +307,22 @@ char nty_socket_use_id ( unsigned char* fds, size_t idx )
 }
 
 
-struct _nty_socket* nty_socket_allocate ( int socktype )
+struct _dk_socket* dk_socket_allocate ( int socktype )
 {
 
-    struct _nty_socket* s = ( struct _nty_socket* ) calloc ( 1, sizeof ( struct _nty_socket ) );
+    struct _dk_socket* s = ( struct _dk_socket* ) calloc ( 1, sizeof ( struct _dk_socket ) );
     if ( s == NULL )
     {
         errno = -ENOMEM;
         return NULL;
     }
 
-    struct _nty_socket_table* sock_table = nty_socket_get_fdtable();
+    struct _dk_socket_table* sock_table = dk_socket_get_fdtable();
 
 
     pthread_spin_lock ( &sock_table->lock );
 
-    s->id = nty_socket_find_id ( sock_table->open_fds, sock_table->cur_idx, sock_table->max_fds );
+    s->id = dk_socket_find_id ( sock_table->open_fds, sock_table->cur_idx, sock_table->max_fds );
     if ( s->id == -1 )
     {
         pthread_spin_unlock ( &sock_table->lock );
@@ -330,12 +330,12 @@ struct _nty_socket* nty_socket_allocate ( int socktype )
         return NULL;
     }
 
-    sock_table->cur_idx = nty_socket_set_start ( s->id );
-    char byte = nty_socket_use_id ( sock_table->open_fds, s->id );
+    sock_table->cur_idx = dk_socket_set_start ( s->id );
+    char byte = dk_socket_use_id ( sock_table->open_fds, s->id );
 
     sock_table->sockfds[s->id] = s;
 
-    nty_trace_socket ( "nty_socket_allocate --> nty_socket_use_id : %x\n", byte );
+    dk_trace_socket ( "dk_socket_allocate --> dk_socket_use_id : %x\n", byte );
 
     pthread_spin_unlock ( &sock_table->lock );
 
@@ -351,20 +351,20 @@ struct _nty_socket* nty_socket_allocate ( int socktype )
     return s;
 }
 
-void nty_socket_free ( int sockid )
+void dk_socket_free ( int sockid )
 {
 
-    struct _nty_socket_table* sock_table = nty_socket_get_fdtable();
+    struct _dk_socket_table* sock_table = dk_socket_get_fdtable();
 
-    struct _nty_socket* s = sock_table->sockfds[sockid];
+    struct _dk_socket* s = sock_table->sockfds[sockid];
     sock_table->sockfds[sockid] = NULL;
 
     pthread_spin_lock ( &sock_table->lock );
 
-    char byte = nty_socket_unuse_id ( sock_table->open_fds, sockid );
+    char byte = dk_socket_unuse_id ( sock_table->open_fds, sockid );
 
-    sock_table->cur_idx = nty_socket_set_start ( sockid );
-    nty_trace_socket ( "nty_socket_free --> nty_socket_unuse_id : %x, %d\n",
+    sock_table->cur_idx = dk_socket_set_start ( sockid );
+    dk_trace_socket ( "dk_socket_free --> dk_socket_unuse_id : %x, %d\n",
                        byte, sock_table->cur_idx );
 
     pthread_spin_unlock ( &sock_table->lock );
@@ -372,15 +372,15 @@ void nty_socket_free ( int sockid )
     free ( s );
 
     UNUSED ( byte );
-    nty_trace_socket ( "nty_socket_free --> Exit\n" );
+    dk_trace_socket ( "dk_socket_free --> Exit\n" );
 
     return ;
 }
 
-struct _nty_socket* nty_socket_get ( int sockid )
+struct _dk_socket* dk_socket_get ( int sockid )
 {
 
-    struct _nty_socket_table* sock_table = nty_socket_get_fdtable();
+    struct _dk_socket_table* sock_table = dk_socket_get_fdtable();
     if ( sock_table == NULL )
     {
         return NULL;
@@ -389,38 +389,38 @@ struct _nty_socket* nty_socket_get ( int sockid )
     return sock_table->sockfds[sockid];
 }
 
-int nty_socket_close_stream ( int sockid )
+int dk_socket_close_stream ( int sockid )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    struct _nty_socket* s = nty_socket_get ( sockid );
+    struct _dk_socket* s = dk_socket_get ( sockid );
     if ( s == NULL )
     {
         return -1;
     }
 
-    nty_tcp_stream* cur_stream = s->stream;
+    dk_tcp_stream* cur_stream = s->stream;
     if ( !cur_stream )
     {
-        nty_trace_api ( "Socket %d: stream does not exist.\n", sockid );
+        dk_trace_api ( "Socket %d: stream does not exist.\n", sockid );
         errno = ENOTCONN;
         return -1;
     }
 
     if ( cur_stream->closed )
     {
-        nty_trace_api ( "Socket %d (Stream %u): already closed stream\n",
+        dk_trace_api ( "Socket %d (Stream %u): already closed stream\n",
                         sockid, cur_stream->id );
         return 0;
     }
     cur_stream->closed = 1;
 
-    nty_trace_api ( "Stream %d: closing the stream.\n", cur_stream->id );
+    dk_trace_api ( "Stream %d: closing the stream.\n", cur_stream->id );
     cur_stream->s = NULL;
 
     if ( cur_stream->state == NTY_TCP_CLOSED )
@@ -444,7 +444,7 @@ int nty_socket_close_stream ( int sockid )
     else if ( cur_stream->state != NTY_TCP_ESTABLISHED &&
               cur_stream->state != NTY_TCP_CLOSE_WAIT )
     {
-        nty_trace_api ( "Stream %d at state %d\n",
+        dk_trace_api ( "Stream %d at state %d\n",
                         cur_stream->id, cur_stream->state );
         errno = -EBADF;
         return -1;
@@ -456,7 +456,7 @@ int nty_socket_close_stream ( int sockid )
 
     if ( ret < 0 )
     {
-        nty_trace_api ( "(NEVER HAPPEN) Failed to enqueue the stream to close.\n" );
+        dk_trace_api ( "(NEVER HAPPEN) Failed to enqueue the stream to close.\n" );
         errno = EAGAIN;
         return -1;
     }
@@ -464,22 +464,22 @@ int nty_socket_close_stream ( int sockid )
     return 0;
 }
 
-int nty_socket_close_listening ( int sockid )
+int dk_socket_close_listening ( int sockid )
 {
 
-    nty_tcp_manager* tcp = nty_get_tcp_manager();
+    dk_tcp_manager* tcp = dk_get_tcp_manager();
     if ( !tcp )
     {
         return -1;
     }
 
-    struct _nty_socket* s = nty_socket_get ( sockid );
+    struct _dk_socket* s = dk_socket_get ( sockid );
     if ( s == NULL )
     {
         return -1;
     }
 
-    struct _nty_tcp_listener* listener = s->listener;
+    struct _dk_tcp_listener* listener = s->listener;
     if ( !listener )
     {
         errno = EINVAL;

@@ -39,30 +39,30 @@ enum
 };
 
 
-typedef struct _nty_mem_chunk
+typedef struct _dk_mem_chunk
 {
     int mc_free_chunks;
-    struct _nty_mem_chunk* next;
-} nty_mem_chunk;
+    struct _dk_mem_chunk* next;
+} dk_mem_chunk;
 
-typedef struct _nty_mempool
+typedef struct _dk_mempool
 {
     u_char* mp_startptr;
-    nty_mem_chunk* mp_freeptr;
+    dk_mem_chunk* mp_freeptr;
     int mp_free_chunks;
     int mp_total_chunks;
     int mp_chunk_size;
     int mp_type;
-} nty_mempool;
+} dk_mempool;
 
 
-nty_mempool* nty_mempool_create ( int chunk_size, size_t total_size, int is_hugepage );
+dk_mempool* dk_mempool_create ( int chunk_size, size_t total_size, int is_hugepage );
 
-void nty_mempool_destory ( nty_mempool* mp );
+void dk_mempool_destory ( dk_mempool* mp );
 
-void* nty_mempool_alloc ( nty_mempool* mp );
+void* dk_mempool_alloc ( dk_mempool* mp );
 
-void nty_mempool_free ( nty_mempool* mp, void* p );
+void dk_mempool_free ( dk_mempool* mp, void* p );
 
 
 

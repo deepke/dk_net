@@ -55,26 +55,26 @@
 
 //#define NTY_DEBUG 1
 #ifdef NTY_DEBUG
-#define ntydbg(format, ...)             fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_api(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_tcp(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_buffer(format, ...)   fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_eth(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_ip(format, ...)       fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_timer(format, ...)    fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_epoll(format, ...)    fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
-#define nty_trace_socket(format, ...)   fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dkdbg(format, ...)             fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_api(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_tcp(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_buffer(format, ...)   fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_eth(format, ...)      fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_ip(format, ...)       fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_timer(format, ...)    fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_epoll(format, ...)    fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
+#define dk_trace_socket(format, ...)   fprintf(stdout, " [File:"__FILE__", line:%05d] : "format, __LINE__, ##__VA_ARGS__)
 
 #else
 #define ntydbg(format, ...)
-#define nty_trace_api(format, ...)
-#define nty_trace_tcp(format, ...)
-#define nty_trace_buffer(format, ...)
-#define nty_trace_eth(format, ...)
-#define nty_trace_ip(format, ...)
-#define nty_trace_timer(format, ...)
-#define nty_trace_epoll(format, ...)
-#define nty_trace_socket(format, ...)
+#define dk_trace_api(format, ...)
+#define dk_trace_tcp(format, ...)
+#define dk_trace_buffer(format, ...)
+#define dk_trace_eth(format, ...)
+#define dk_trace_ip(format, ...)
+#define dk_trace_timer(format, ...)
+#define dk_trace_epoll(format, ...)
+#define dk_trace_socket(format, ...)
 
 
 #endif

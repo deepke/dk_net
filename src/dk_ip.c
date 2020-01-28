@@ -47,11 +47,11 @@ int GetOutputInterface ( uint32_t daddr )
     return 0;
 }
 
-extern nty_arp_table* global_arp_table;
-extern void nty_arp_request ( nty_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_ts );
-extern int nty_udp_process ( nty_nic_context* ctx, unsigned char* stream );
-extern int nty_tcp_process ( nty_nic_context* ctx, unsigned char* stream );
-extern int nty_icmp_process ( nty_nic_context* ctx, unsigned char* stream );
+extern dk_arp_table* global_arp_table;
+extern void dk_arp_request ( dk_tcp_manager* tcp, uint32_t ip, int nif, uint32_t cur_ts );
+extern int dk_udp_process ( dk_nic_context* ctx, unsigned char* stream );
+extern int dk_tcp_process ( dk_nic_context* ctx, unsigned char* stream );
+extern int dk_icmp_process ( dk_nic_context* ctx, unsigned char* stream );
 
 unsigned char* GetDestinationHWaddr ( uint32_t dip )
 {
@@ -116,7 +116,7 @@ static inline unsigned short ip_fast_csum ( const void* iph, unsigned int ihl )
 
 
 
-uint8_t* IPOutputStandalone ( nty_tcp_manager* tcp, uint8_t protocol,
+uint8_t* IPOutputStandalone ( dk_tcp_manager* tcp, uint8_t protocol,
                               uint16_t ip_id, uint32_t saddr, uint32_t daddr, uint16_t payloadlen )
 {
 
@@ -154,7 +154,7 @@ uint8_t* IPOutputStandalone ( nty_tcp_manager* tcp, uint8_t protocol,
 }
 
 
-uint8_t* IPOutput ( nty_tcp_manager* tcp, nty_tcp_stream* stream, uint16_t tcplen )
+uint8_t* IPOutput ( dk_tcp_manager* tcp, dk_tcp_stream* stream, uint16_t tcplen )
 {
     struct iphdr* iph;
     int nif = 0;
@@ -172,7 +172,7 @@ uint8_t* IPOutput ( nty_tcp_manager* tcp, nty_tcp_stream* stream, uint16_t tcple
     unsigned char* haddr = GetDestinationHWaddr ( stream->daddr );
     if ( !haddr )
     {
-        nty_arp_request ( tcp, stream->daddr, stream->snd->nif_out, tcp->cur_ts );
+        dk_arp_request ( tcp, stream->daddr, stream->snd->nif_out, tcp->cur_ts );
         return NULL;
     }
 
@@ -201,7 +201,7 @@ uint8_t* IPOutput ( nty_tcp_manager* tcp, nty_tcp_stream* stream, uint16_t tcple
 
 }
 
-int nty_ipv4_process ( nty_nic_context* ctx, unsigned char* stream )
+int dk_ipv4_process ( dk_nic_context* ctx, unsigned char* stream )
 {
 
     struct iphdr* iph = ( struct iphdr* ) ( stream + sizeof ( struct ethhdr ) );
@@ -212,15 +212,15 @@ int nty_ipv4_process ( nty_nic_context* ctx, unsigned char* stream )
 
     if ( iph->protocol == PROTO_UDP )
     {
-        nty_udp_process ( ctx, stream );
+        dk_udp_process ( ctx, stream );
     }
     else if ( iph->protocol == PROTO_TCP )
     {
-        nty_tcp_process ( ctx, stream );
+        dk_tcp_process ( ctx, stream );
     }
     else if ( iph->protocol == PROTO_ICMP )
     {
-        nty_icmp_process ( ctx, stream );
+        dk_icmp_process ( ctx, stream );
     }
     return 0;
 }
